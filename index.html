@@ -1,0 +1,1316 @@
+<!doctype html>
+<html lang="es" data-theme="sistema">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+<meta name="color-scheme" content="light dark"/>
+<!-- PWA (preparación para el APK con PWABuilder): manifiesto, color de tema
+     según la paleta real de la app (claro #f1edf7 / oscuro #0e0722) e ícono
+     del gatito para la pantalla principal. -->
+<link rel="manifest" href="assets/manifest.webmanifest"/>
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#f1edf7"/>
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0e0722"/>
+<link rel="apple-touch-icon" href="assets/icon-192.png"/>
+<link rel="icon" href="data:,"/>
+<title>PapuMorse · Papumasteer Morse</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,500;0,700;0,800;0,900;1,800;1,900&family=IBM+Plex+Mono:wght@500;600;700&display=swap" rel="stylesheet"/>
+<style>
+button,[role="button"],select,summary,input:not([type="checkbox"],[type="radio"]){min-height:2rem}
+*{box-sizing:border-box}
+/* Paleta inspirada en el banner: azul noche, cian y magenta, en versión
+   suave para el tema claro y profunda para el oscuro (sin saturar el resto). */
+:root{--bg:#f1edf7;--surface:#fff;--surface-2:#ece6f5;--ink:#1c1138;--muted:#665e7d;--line:#d9cfee;--note:#c3b9da;--note-edge:#a394c4;--accent:#0b84c6;--accent-strong:#075e9e;--accent-2:#c2186f;--accent-soft:rgba(11,132,198,.13);--on-accent:#fff;--good:#0a9a72;--bad:#d61f4b;--pad-ring:#241547;--shadow:0 8px 24px rgba(28,17,56,.10)}
+:root[data-theme="dark"]{--bg:#0e0722;--surface:#1a0f36;--surface-2:#25184a;--ink:#f3efff;--muted:#a99cc9;--line:#382a63;--note:#4a3a78;--note-edge:#66539c;--accent:#22b8ec;--accent-strong:#63d8ff;--accent-2:#ff4d94;--accent-soft:rgba(34,184,236,.16);--on-accent:#081026;--good:#2fd6a3;--bad:#ff5d7a;--pad-ring:#e9e2ff;--shadow:0 8px 24px rgba(0,0,0,.5)}
+@media(prefers-color-scheme:dark){:root[data-theme="sistema"]{--bg:#0e0722;--surface:#1a0f36;--surface-2:#25184a;--ink:#f3efff;--muted:#a99cc9;--line:#382a63;--note:#4a3a78;--note-edge:#66539c;--accent:#22b8ec;--accent-strong:#63d8ff;--accent-2:#ff4d94;--accent-soft:rgba(34,184,236,.16);--on-accent:#081026;--good:#2fd6a3;--bad:#ff5d7a;--pad-ring:#e9e2ff;--shadow:0 8px 24px rgba(0,0,0,.5)}}
+html,body{height:100%}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Archivo",system-ui,sans-serif;line-height:1.4;overflow:hidden}
+.app{height:100dvh;display:flex;flex-direction:column;max-width:860px;margin:0 auto}
+/* Cabecera tipo app de música: sigue el dedo en proporción a lo deslizado
+   y, al soltar o detenerse el scroll, hace snap hasta ocultarse del todo
+   o reaparecer completa (nunca se queda a mitad). Umbral bajo: basta un
+   deslizamiento suave hacia abajo para completar el ocultamiento, y uno
+   suave hacia arriba para que reaparezca completa. */
+.app-header{flex:none;height:104px;overflow:hidden;z-index:20;position:relative;will-change:height}
+.banner{position:relative;height:104px;overflow:hidden;background:linear-gradient(112deg,#10062a 0%,#1d0b45 42%,#2a1160 68%,#130833 100%);display:flex;align-items:center;justify-content:center}
+.banner::before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(115deg,transparent 0 46px,rgba(72,44,150,.28) 46px 62px,transparent 62px 118px);pointer-events:none}
+.banner-streak{position:absolute;height:130px;width:22px;transform:rotate(28deg);border-radius:99px;pointer-events:none}
+.banner-streak.s1{left:6%;top:-30px;background:linear-gradient(180deg,transparent,#ff2e88 30%,#ff2e88 70%,transparent);opacity:.85;width:16px}
+.banner-streak.s2{left:13%;top:-14px;background:linear-gradient(180deg,transparent,rgba(255,46,136,.55) 35%,rgba(255,46,136,.55) 65%,transparent);width:7px}
+.banner-streak.s3{right:8%;top:-26px;background:linear-gradient(180deg,transparent,#ff2e88 30%,#e0217a 70%,transparent);opacity:.8;width:18px}
+.banner-streak.s4{right:16%;top:-10px;background:linear-gradient(180deg,transparent,rgba(46,160,255,.5) 35%,rgba(46,160,255,.5) 65%,transparent);width:7px}
+.banner-star{position:absolute;left:50%;top:50%;width:118px;height:118px;transform:translate(-50%,-50%);pointer-events:none;opacity:.95}
+.banner-spark{position:absolute;color:#fff;pointer-events:none;text-shadow:0 0 8px #fff,0 0 14px #ff7ac0}
+.banner-spark.k1{left:24%;top:14px;font-size:11px}.banner-spark.k2{right:23%;top:20px;font-size:9px}.banner-spark.k3{right:29%;bottom:12px;font-size:12px}.banner-spark.k4{left:29%;bottom:16px;font-size:8px}
+.banner-text{position:relative;text-align:center;font-style:italic;font-weight:900;text-transform:uppercase;transform:skewX(-5deg);line-height:.94;letter-spacing:.015em}
+.banner-text span{display:block;background:linear-gradient(180deg,#b8fbff 0%,#4fe3ff 26%,#00b7ff 52%,#0072ff 78%,#0057e8 100%);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-stroke:1.4px #0d0633;filter:drop-shadow(0 2px 0 rgba(255,46,136,.85)) drop-shadow(0 5px 12px rgba(255,46,136,.35))}
+.banner-text .bt-1{font-size:25px}
+.banner-text .bt-2{font-size:37px;letter-spacing:.06em}
+.burger{position:absolute;left:10px;top:10px;width:42px;height:42px;flex:none;border-radius:12px;border:1px solid rgba(255,255,255,.4);background:rgba(10,3,32,.58);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:3}
+.burger svg{width:22px;height:22px}
+.banner .mode-label{position:absolute;right:10px;top:12px;z-index:3;font-size:10.5px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:#8feaff;background:rgba(10,3,32,.58);border:1px solid rgba(143,234,255,.35);border-radius:999px;padding:5px 9px}
+.credits p{margin:0 0 8px;color:var(--muted);font-size:13.5px;line-height:1.5}
+.credits p b{color:var(--ink)}
+.credits .cred-name{font-size:15px;color:var(--ink)}
+main{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;touch-action:pan-y;padding:4px 14px 18px;scrollbar-width:thin}
+.view{display:none}.view.active{display:block;animation:fadeIn .18s ease}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+h1{font-size:24px;font-weight:900;margin:2px 0 4px;line-height:1.1}
+.lede{color:var(--muted);font-size:14px;margin:0 0 12px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:14px;margin-bottom:12px}
+.card h2{font-size:13px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;margin:0 0 10px}
+label.field-label{display:block;font-weight:700;font-size:13px;margin-bottom:5px}
+textarea{width:100%;min-height:48px;resize:none;font-family:"IBM Plex Mono",monospace;font-size:18px;font-weight:600;text-transform:uppercase;color:var(--ink);background:var(--surface-2);border:2px solid var(--line);border-radius:10px;padding:10px 12px}
+textarea:focus{outline:none;border-color:var(--accent)}
+.char-count{font-size:11px;color:var(--muted);text-align:right;margin-top:3px;font-family:"IBM Plex Mono",monospace}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 2px}
+.chip{font-family:"IBM Plex Mono",monospace;font-size:12px;font-weight:600;background:var(--surface-2);color:var(--ink);border:1px solid var(--line);border-radius:999px;padding:6px 12px;cursor:pointer;min-height:34px}
+.chip.sel{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
+.row{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.btn{font-family:inherit;font-weight:800;font-size:14px;border-radius:10px;padding:10px 16px;cursor:pointer;min-height:44px;border:2px solid transparent}
+.btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent-strong));color:var(--on-accent)}.btn-ghost{background:transparent;color:var(--ink);border-color:var(--line)}
+.btn-small{padding:8px 12px;min-height:38px;font-size:13px}
+.hint{font-size:12.5px;color:var(--muted);margin-top:8px}.hint.error{color:var(--bad);font-weight:700}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:10px}
+.stat{background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:6px 6px;text-align:center}
+.stat .k{font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.stat .v{font-family:"IBM Plex Mono",monospace;font-size:18px;font-weight:700}
+.signal-v{display:flex;flex-direction:column;align-items:center;gap:1px;line-height:1}
+.signal-face{font-size:22px;line-height:1.1}.signal-face.worried{animation:signalShake .5s ease}
+@keyframes signalShake{20%{transform:translateX(-2px) rotate(-6deg)}50%{transform:translateX(2px) rotate(6deg)}80%{transform:translateX(-1px)}}
+.lives{display:inline-flex;gap:2px}.heart{width:17px;height:17px;fill:#e02424;stroke:#b91c1c;stroke-width:1.1;transition:all .25s}.heart.off{fill:var(--note);stroke:var(--note-edge);opacity:.5;transform:scale(.9)}
+.signal-msg{font-size:10px;font-weight:700;color:var(--muted);line-height:1.2;margin-top:3px}.signal-msg.danger{color:var(--bad)}
+.progress-outer{height:7px;background:var(--surface-2);border:1px solid var(--line);border-radius:99px;overflow:hidden;margin-bottom:7px}
+.progress-inner{height:100%;width:0%;background:var(--accent);transition:width .25s}
+.word-line{text-align:center;font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--muted);margin-bottom:8px;min-height:18px}.word-line b{color:var(--accent-strong);font-size:15px;letter-spacing:.14em}
+.track-wrap{background:var(--surface-2);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.track{display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:center;gap:10px 6px;padding:14px 10px 10px;min-height:78px;width:100%}
+.letter{display:flex;flex-direction:column;align-items:center;gap:5px;flex:none}
+.letter .syms{display:flex;align-items:center;gap:4px}.letter .ch{font-family:"IBM Plex Mono",monospace;font-size:12px;font-weight:700;color:var(--muted);min-height:16px}
+.letter.done .ch{color:var(--good)}.letter.has-fail .ch{color:var(--bad)}
+.sym{position:relative;overflow:hidden;flex:none;background:var(--note);border:1px solid var(--note-edge);height:26px;border-radius:99px}
+.sym.dot{width:26px}.sym.dash{width:64px}.sym .fill{position:absolute;inset:0 auto 0 0;width:0%;background:var(--accent)}
+.sym.done{border-color:var(--good)}.sym.done .fill{width:100%!important;background:var(--good)}
+.sym.failed{border-color:var(--bad)}.sym.failed .fill{width:100%!important;background:var(--bad)}
+.sym.playing{border-color:var(--accent)}.sym.playing .fill{width:100%!important;background:var(--accent)}
+.sym.active,.gap.active{box-shadow:0 0 0 3px var(--accent-soft),0 0 0 1px var(--accent);animation:pulse 1s ease-in-out infinite}
+@keyframes pulse{50%{box-shadow:0 0 0 6px var(--accent-soft),0 0 0 1px var(--accent)}}
+.gap{position:relative;flex:none;height:26px;border-radius:6px;display:flex;align-items:center}.gap.intra{width:12px}.gap.letter{width:24px}
+.gap .gapline{height:5px;width:100%;border-radius:99px;background:var(--note);overflow:hidden;position:relative}.gap .gapfill{position:absolute;inset:0 auto 0 0;width:0%;background:var(--muted)}
+.gap.done .gapfill{width:100%!important;background:var(--good)}.gap.failed .gapfill{width:100%!important;background:var(--bad)}
+.shake{animation:shake .32s ease}@keyframes shake{20%{transform:translateX(-7px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(3px)}}
+.feedback{min-height:28px;display:flex;align-items:center;justify-content:center;text-align:center;font-weight:800;font-size:16px;margin:10px 0 2px}
+.feedback.good{color:var(--good)}.feedback.perfect{color:var(--accent-strong)}.feedback.bad{color:var(--bad)}.feedback.pop{animation:pop .25s ease}@keyframes pop{0%{transform:scale(.92)}100%{transform:scale(1)}}
+.target-line{text-align:center;font-family:"IBM Plex Mono",monospace;font-size:13px;color:var(--muted);min-height:20px;margin-bottom:4px}.target-line b{color:var(--ink)}
+/* Manipulador: SOLO el círculo es zona táctil y SOLO el círculo se ilumina.
+   Antes el botón era un rectángulo de todo el ancho con touch-action:none:
+   si el pulgar caía ahí por error, no se podía deslizar arriba/abajo y
+   parecía iluminarse toda la caja. Ahora el botón mide lo que el círculo,
+   es redondo (border-radius:50%), no tiene fondo ni sombra propios en
+   ningún estado y deja pasar el scroll: touch-action:pan-y permite que
+   un deslizamiento vertical tome el control y cancele la pulsación sin
+   penalizar (ver bindPad). El resto de la tarjeta ya no es zona de juego,
+   así que deslizar desde ahí desplaza la pantalla con normalidad. */
+.pad{width:124px;height:124px;margin:4px auto 0;padding:0;border:0;border-radius:50%;background:transparent!important;box-shadow:none!important;cursor:pointer;display:flex;align-items:center;justify-content:center;touch-action:pan-y;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent;outline:none}
+.pad:active,.pad:focus,.pad.pressed{background:transparent!important;box-shadow:none!important}
+.pad.small{width:104px;height:104px}
+.pad-circle{width:108px;height:108px;border-radius:50%;flex:none;position:relative;border:3px solid var(--pad-ring);display:flex;align-items:center;justify-content:center;pointer-events:none;transition:transform .5s cubic-bezier(.34,1.85,.64,1),box-shadow .2s ease,border-color .15s ease}
+.pad.small .pad-circle{width:92px;height:92px}
+.pad-circle::before{content:"";position:absolute;inset:8px;border-radius:50%;border:2px solid var(--pad-ring);opacity:.45}
+.pad-circle svg{width:44px;height:44px;color:var(--pad-ring);transition:color .15s,filter .15s}
+.pad:focus-visible .pad-circle{outline:3px solid var(--accent);outline-offset:3px}
+/* Al presionar solo se hunde e ilumina el círculo; al soltar, la transición
+   con rebote (cubic-bezier con sobreimpulso) lo devuelve pasando un poco
+   de su tamaño y asentándose: esa es su animación de rebote, solo suya. */
+.pad.pressed .pad-circle{transform:scale(.92);box-shadow:0 0 0 10px var(--accent-soft),0 0 22px var(--accent-soft);border-color:var(--accent);transition:transform .07s ease-out,box-shadow .12s ease,border-color .12s ease}
+.pad.pressed .pad-circle::before{border-color:var(--accent)}
+.pad.pressed .pad-circle svg{color:var(--accent);filter:drop-shadow(0 0 5px var(--accent));animation:fpGlow .9s ease-in-out infinite}
+@keyframes fpGlow{50%{filter:drop-shadow(0 0 9px var(--accent))}}
+.pad:disabled{opacity:.45;cursor:not-allowed;pointer-events:none}
+.pad-hint{text-align:center;font-size:11px;color:var(--muted);margin-top:2px;line-height:1.45;overflow-wrap:break-word}
+.start-row{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin-top:10px}
+.results{display:none;text-align:center}.results.show{display:block}.results .big{font-size:23px;font-weight:900;margin:2px 0 6px}.results p{color:var(--muted);margin:0 0 12px;font-size:14px}
+.results .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;max-width:420px;margin:0 auto 12px}
+@media(min-width:560px){.results .grid{grid-template-columns:repeat(4,1fr);max-width:none}}
+.results .btns{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+/* Textos de los juegos completos, sin recortar ni resumir: en pantallas
+   chicas varias frases quedaban apretadas en columnas o líneas únicas y
+   se cortaban/resumían visualmente (p. ej. el mensaje de señal dentro de
+   una columna de 4, los feedback largos y las descripciones de los retos).
+   Ahora todo el texto de juego puede saltar de línea y crecer en alto,
+   las estadísticas pasan a 2 columnas en móvil para que cada texto tenga
+   sitio, y ningún contenedor de juego recorta su texto. */
+.feedback,.target-line,.word-line,.hint,.mode-note,.learn-word,.free-current,.signal-msg,.challenge-btn span,.quiz-opt,.btn,.start-row .btn{white-space:normal;overflow-wrap:break-word}
+.feedback{height:auto;line-height:1.35;padding:2px 4px}
+.target-line,.word-line{line-height:1.45;height:auto}
+.stat .k,.stat .v{overflow-wrap:break-word;line-height:1.25}
+.signal-msg{max-width:100%}
+.free-decoded,.free-symbols,.blind-progress,.quiz-morse,.learn-big .lb-morse,.free-decoded{overflow-wrap:anywhere}
+.challenge-btn span{display:block;line-height:1.45;margin-top:2px}
+.card h2{overflow-wrap:break-word;line-height:1.35}
+.start-row .btn{line-height:1.3}
+@media(max-width:520px){
+.stats{grid-template-columns:repeat(2,1fr)}
+#challenge-quiz .stats{grid-template-columns:repeat(3,1fr)}
+.stats .stat{padding:8px 6px}
+.feedback{font-size:15px}
+.quiz-morse{font-size:32px}
+.blind-word{font-size:24px;letter-spacing:.18em;overflow-wrap:anywhere}
+}
+/* Bottom nav */
+.bottomnav{flex:none;display:grid;grid-template-columns:repeat(4,1fr);background:var(--surface);border-top:1px solid var(--line);padding:6px 6px calc(6px + env(safe-area-inset-bottom));z-index:20}
+.navbtn{border:0;background:transparent;color:var(--muted);font-family:inherit;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;padding:7px 2px;border-radius:10px;font-size:11px;font-weight:800;min-height:52px}
+.navbtn svg{width:21px;height:21px}
+.navbtn[aria-selected="true"]{color:var(--accent-strong);background:var(--accent-soft)}
+/* Drawer */
+.scrim{position:fixed;inset:0;background:rgba(10,12,14,.28);opacity:0;pointer-events:none;transition:opacity .22s;z-index:40}.scrim.open{opacity:1;pointer-events:auto}
+.drawer{position:fixed;top:0;left:0;bottom:0;width:262px;max-width:76vw;z-index:41;background:var(--surface);border-right:1px solid var(--line);box-shadow:var(--shadow);transform:translateX(-106%);transition:transform .24s;padding:18px 16px;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.drawer.open{transform:translateX(0)}.drawer[hidden]{display:none}
+.drawer h2{font-size:13px;text-transform:uppercase;letter-spacing:.07em;margin:4px 0 14px;color:var(--muted)}
+.drawer .opt{margin-bottom:18px}.drawer .opt-label{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:7px}
+.drawer .menu-btn{display:block;width:100%;text-align:left;font-family:inherit;font-weight:700;font-size:14.5px;background:var(--surface-2);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:11px 13px;margin-bottom:7px;cursor:pointer;min-height:44px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;width:100%}
+.seg button{flex:1;border:0;background:var(--surface-2);color:var(--muted);font-family:inherit;font-weight:700;font-size:13px;padding:9px 6px;cursor:pointer;min-height:40px}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--on-accent)}
+/* Interruptor de música ambiental (botón con rol de interruptor) */
+.music-row{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:10px 13px}
+.music-row .music-label{font-weight:700;font-size:14.5px;color:var(--ink)}
+.music-row .music-sub{font-size:12px;color:var(--muted);margin-top:2px;line-height:1.4}
+.switch{flex:none;width:52px;height:30px;border-radius:999px;border:1px solid var(--line);background:var(--note);cursor:pointer;position:relative;padding:0;min-height:30px;transition:background .2s}
+.switch::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:var(--surface);box-shadow:0 1px 4px rgba(0,0,0,.3);transition:left .2s}
+.switch[aria-checked="true"]{background:var(--accent);border-color:var(--accent)}
+.switch[aria-checked="true"]::after{left:25px}
+/* Paneles de Créditos y Reglas (se abren desde las 3 rayas) */
+.info-overlay{position:fixed;inset:0;z-index:50;background:rgba(10,12,14,.45);display:flex;align-items:center;justify-content:center;padding:16px}
+.info-overlay[hidden]{display:none}
+.info-panel{background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);width:100%;max-width:520px;max-height:84dvh;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:20px 18px}
+.info-panel h2{font-size:19px;font-weight:900;margin:0 0 12px}
+.info-panel h3{font-size:13px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;margin:16px 0 6px;color:var(--accent-strong)}
+.info-panel p{margin:0 0 8px;color:var(--muted);font-size:14px;line-height:1.55}
+.info-panel p b,.info-panel li b{color:var(--ink)}
+.info-panel ul{margin:0 0 8px;padding-left:20px;color:var(--muted);font-size:14px;line-height:1.55}
+.info-panel li{margin-bottom:5px}
+.info-panel .btn{margin-top:10px;width:100%}
+.mode-box{background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:10px;margin:10px 0}
+.mode-box .opt-label{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:7px}
+.mode-note{font-size:12.5px;color:var(--muted);margin:8px 0 0;line-height:1.45}.mode-note b{color:var(--ink)}
+/* Aprender */
+.alpha-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
+@media(min-width:520px){.alpha-grid{grid-template-columns:repeat(6,1fr)}}
+.alpha-cell{background:var(--surface-2);border:1.5px solid var(--line);border-radius:11px;padding:9px 4px 7px;text-align:center;cursor:pointer;font-family:inherit;color:var(--ink);min-height:58px}
+.alpha-cell .ac{font-weight:900;font-size:17px;display:block;line-height:1}
+.alpha-cell .am{font-family:"IBM Plex Mono",monospace;font-size:13px;color:var(--accent-strong);letter-spacing:.06em;display:block;margin-top:4px}
+.alpha-cell.sel{border-color:var(--accent);background:var(--accent-soft)}
+.alpha-cell.playing{border-color:var(--accent);animation:pulse 0.6s ease}
+.learn-big{text-align:center;padding:6px 0 2px}
+.learn-big .lb-char{font-size:52px;font-weight:900;line-height:1}
+.learn-big .lb-morse{font-family:"IBM Plex Mono",monospace;font-size:34px;letter-spacing:.18em;color:var(--accent-strong);margin:4px 0}
+.learn-big .lb-morse span{display:inline-block;padding:2px 4px;border-radius:6px}
+.learn-big .lb-morse span.on{background:var(--accent);color:var(--on-accent)}
+.learn-word{font-size:13px;color:var(--muted)} .learn-word b{color:var(--ink)}
+.practice-track{display:flex;justify-content:center;gap:6px;margin:10px 0 2px;flex-wrap:wrap}
+/* Libre */
+.free-output{background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:14px;min-height:92px}
+.free-symbols{font-family:"IBM Plex Mono",monospace;font-size:26px;letter-spacing:.14em;color:var(--accent-strong);min-height:34px;word-break:break-all}
+.free-decoded{font-family:"IBM Plex Mono",monospace;font-size:22px;font-weight:700;letter-spacing:.12em;min-height:30px;word-break:break-all}
+.free-current{font-size:13px;color:var(--muted)} .free-current b{color:var(--ink);font-family:"IBM Plex Mono",monospace;font-size:16px}
+/* Retos */
+.challenge-list{display:grid;gap:8px}
+.challenge-btn{text-align:left;background:var(--surface-2);border:1.5px solid var(--line);border-radius:12px;padding:12px 14px;cursor:pointer;font-family:inherit;color:var(--ink);width:100%}
+.challenge-btn b{font-size:15px;display:block}.challenge-btn span{font-size:13px;color:var(--muted)}
+.challenge-btn.sel{border-color:var(--accent);background:var(--accent-soft)}
+.quiz-morse{font-family:"IBM Plex Mono",monospace;font-size:38px;letter-spacing:.2em;text-align:center;color:var(--accent-strong);padding:10px 0}
+.quiz-opts{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.quiz-opt{font-family:"IBM Plex Mono",monospace;font-size:20px;font-weight:800;padding:14px;border-radius:11px;border:1.5px solid var(--line);background:var(--surface-2);color:var(--ink);cursor:pointer}
+.quiz-opt.correct{border-color:var(--good);background:rgba(14,159,110,.15);color:var(--good)}
+.quiz-opt.wrong{border-color:var(--bad);background:rgba(217,45,32,.12);color:var(--bad)}
+.blind-word{text-align:center;font-family:"IBM Plex Mono",monospace;font-size:28px;font-weight:800;letter-spacing:.3em;margin:6px 0}
+.blind-progress{text-align:center;font-family:"IBM Plex Mono",monospace;font-size:20px;letter-spacing:.14em;color:var(--muted);min-height:28px;word-break:break-all}
+.blind-progress .done{color:var(--good)} .blind-progress .cur{color:var(--accent-strong);text-decoration:underline}
+/* Tutorial */
+.tut-highlight{position:relative;z-index:55;outline:3px solid var(--accent);outline-offset:5px;border-radius:12px}
+.tut-box{position:fixed;left:14px;right:14px;bottom:76px;z-index:60;max-width:520px;margin:0 auto;background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:16px 16px 12px;display:none}
+.tut-box.show{display:block}
+.tut-box::before{content:"";position:absolute;top:-26px;left:50%;margin-left:-13px;border:13px solid transparent;border-bottom:14px solid var(--accent);animation:bob 1s ease-in-out infinite}
+@keyframes bob{50%{transform:translateY(5px)}}
+.tut-count{font-family:"IBM Plex Mono",monospace;font-size:11px;font-weight:700;color:var(--accent-strong);letter-spacing:.08em}
+.tut-box h3{margin:4px 0 5px;font-size:18px;font-weight:900}.tut-box p{margin:0 0 6px;color:var(--muted);font-size:14px}
+.tut-box .tut-sos{font-family:"IBM Plex Mono",monospace;font-size:20px;font-weight:700;letter-spacing:.18em;color:var(--ink);text-align:center;padding:6px 0 2px}.tut-box .tut-sos span{color:var(--accent)}
+.tut-nav{display:flex;gap:8px;justify-content:space-between;align-items:center;margin-top:8px}.tut-nav .sp{display:flex;gap:8px}
+.tut-btn{font-family:inherit;font-weight:800;font-size:14px;border-radius:10px;padding:10px 16px;cursor:pointer;min-height:42px;border:2px solid transparent}
+@media(prefers-reduced-motion:reduce){.sym.active,.gap.active,.feedback.pop,.shake,.tut-box::before,.pad.pressed .pad-circle svg,.signal-face.worried,.view.active{animation:none}.pad-circle{transition:none}.pad.pressed .pad-circle{transform:scale(.96)}}
+</style>
+</head>
+<body>
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="drawer" aria-label="Opciones" hidden>
+<h2>PapuMorse · Opciones</h2>
+<div class="opt"><div class="opt-label">Tema</div><div class="seg" role="group" aria-label="Tema">
+<button type="button" data-theme-choice="light" aria-pressed="false">Claro</button>
+<button type="button" data-theme-choice="dark" aria-pressed="false">Oscuro</button>
+<button type="button" data-theme-choice="sistema" aria-pressed="true">Sistema</button></div></div>
+<div class="opt"><div class="opt-label">Música de fondo</div>
+<div class="music-row"><div><div class="music-label">Música ambiental</div><div class="music-sub">Generada en la propia app, gratuita y libre de derechos.</div></div>
+<button type="button" class="switch" id="music-toggle" role="switch" aria-checked="false" aria-label="Música ambiental de fondo"></button></div></div>
+<div class="opt">
+<button type="button" class="menu-btn" id="menu-tutorial">Ver el tutorial</button>
+<button type="button" class="menu-btn" id="menu-reglas">Reglas</button>
+<button type="button" class="menu-btn" id="menu-creditos">Créditos</button>
+</div>
+</aside>
+
+<div class="info-overlay" id="panel-reglas" hidden>
+<div class="info-panel" role="dialog" aria-label="Reglas del juego">
+<h2>Reglas del juego</h2>
+<h3>Transmitir (con guía)</h3>
+<ul>
+<li>Sigue la partitura nota a nota: <b>punto</b> = toque corto, <b>raya</b> = toque largo, como tres puntos.</li>
+<li>Mantén presionado el círculo para llenar la nota que brilla y <b>suelta justo cuando se llene</b>. Los espacios entre símbolos y letras también se llenan esperando sin tocar.</li>
+<li><b>Fallo = −50 pts y −1 corazón.</b> Tienes 3 corazones de señal: si se acaban, el receptor ya no te escucha y se corta la transmisión.</li>
+<li>Nota perfecta: <b>+150 pts</b> (con bonus de combo). Nota bien tocada: <b>+100 pts</b>. Espacio a tiempo: <b>+25 pts</b>.</li>
+</ul>
+<h3>Aprendizaje / Real</h3>
+<ul>
+<li><b>Aprendizaje:</b> punto de 180 ms y raya de 540 ms, con calma y el audio sincronizado a esa velocidad.</li>
+<li><b>Real:</b> punto de 60 ms y raya de 180 ms, como un telégrafo de verdad.</li>
+</ul>
+<h3>Aprender</h3>
+<ul>
+<li>Toca cualquier letra del alfabeto para <b>oír su clave</b> y practicarla con el manipulador, símbolo por símbolo, hasta que te salga.</li>
+</ul>
+<h3>Sin guía</h3>
+<ul>
+<li>Tú tocas de memoria y la app <b>decodifica</b> lo que hiciste: corto = punto, largo = raya.</li>
+<li>En Real, la letra se cierra sola tras <b>200 ms</b> de silencio y el espacio tras <b>450 ms</b>.</li>
+<li><b>Sin penalización por tardar entre letras:</b> escribes a tu ritmo y no pierdes señal por esperar.</li>
+</ul>
+<h3>Retos</h3>
+<ul>
+<li><b>Palabra a ciegas:</b> ves la palabra, pero no su morse; fórmala solo de memoria.</li>
+<li><b>Oído:</b> escuchas una clave sin verla y eliges qué letra es.</li>
+<li><b>Lectura:</b> ves solo puntos y rayas y reconoces la letra de memoria.</li>
+</ul>
+<button type="button" class="btn btn-primary" data-close-panel>Cerrar</button>
+</div>
+</div>
+
+<div class="info-overlay" id="panel-creditos" hidden>
+<div class="info-panel" role="dialog" aria-label="Créditos">
+<h2>Créditos</h2>
+<p><b>PapuMorse · Papumasteer Morse</b> — aprende clave morse tocándola, no solo mirándola.</p>
+<h3>Creador</h3>
+<p><b>Samuel «Papumaster»</b> (papumaster84): idea original, diseño y pruebas. Él pidió el tutorial paso a paso con SOS, el manipulador circular, los modos Sin guía y Retos, y el interruptor Aprendizaje / Real.</p>
+<h3>Inspiraciones</h3>
+<ul>
+<li><b>La historia del telégrafo y Samuel Morse:</b> el invento que conectó al mundo con puntos y rayas, y la clave que lleva su nombre.</li>
+<li><b>Los juegos de ritmo y de música:</b> seguir una partitura con el pulgar, llenar cada nota a tiempo y encadenar combos.</li>
+<li><b>El reto de aprender un código con el oído:</b> como los radioaficionados de antes, que reconocían letras solo por su sonido, sin ver nada.</li>
+</ul>
+<h3>Fechas</h3>
+<p>App creada en <b>noviembre de 2026</b>.</p>
+<h3>Colaboradores</h3>
+<p>No hubo. <b>PapuMorse es un proyecto hecho en solitario por Papumaster</b>, de principio a fin.</p>
+<h3>La clave y la música</h3>
+<p>Alfabeto morse internacional. Punto = toque corto · raya = toque largo, como tres puntos. La música ambiental de fondo se genera dentro de la propia app: es gratuita y libre de derechos.</p>
+<button type="button" class="btn btn-primary" data-close-panel>Cerrar</button>
+</div>
+</div>
+
+<div class="app">
+<header class="app-header" id="app-header">
+<!-- Banner recreado SOLO con código (CSS + SVG), sin usar la imagen:
+     fondo azul noche, franjas magenta en diagonal, estrella central
+     y letras en degradado cian a azul con contorno oscuro y brillo rosa. -->
+<div class="banner">
+<span class="banner-streak s1" aria-hidden="true"></span><span class="banner-streak s2" aria-hidden="true"></span><span class="banner-streak s3" aria-hidden="true"></span><span class="banner-streak s4" aria-hidden="true"></span>
+<svg class="banner-star" viewBox="0 0 100 100" aria-hidden="true"><defs><linearGradient id="star-g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#c86bff"/><stop offset=".55" stop-color="#7b2ff7"/><stop offset="1" stop-color="#ff2e88"/></linearGradient></defs><path d="M50 3 61.6 35.9 96.5 37.1 69.2 58.4 78.4 92 50 72.4 21.6 92 30.8 58.4 3.5 37.1 38.4 35.9Z" fill="url(#star-g)" stroke="#e9e4ff" stroke-width="3.2" stroke-linejoin="round"/><path d="M50 14 58.5 38.5 84.5 39.4 64.3 55.6 71 80.5 50 65.8 29 80.5 35.7 55.6 15.5 39.4 41.5 38.5Z" fill="none" stroke="rgba(13,6,51,.45)" stroke-width="2" stroke-linejoin="round"/></svg>
+<span class="banner-spark k1" aria-hidden="true">✦</span><span class="banner-spark k2" aria-hidden="true">✦</span><span class="banner-spark k3" aria-hidden="true">✦</span><span class="banner-spark k4" aria-hidden="true">✦</span>
+<button type="button" class="burger" id="btn-menu" aria-label="Abrir opciones"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+<div class="banner-text" aria-label="Papumasteer Morse"><span class="bt-1">Papumasteer</span><span class="bt-2">Morse</span></div>
+<div class="mode-label" id="mode-label">Transmitir</div>
+</div>
+</header>
+
+<main id="main-scroll">
+
+<!-- ============ TRANSMITIR ============ -->
+<section class="view active" id="view-transmitir">
+<h1>Transmite con guía</h1>
+<p class="lede">Escribe tu mensaje y sigue la partitura nota a nota. Para aprender de verdad, pasa luego a <b>Sin guía</b> y <b>Retos</b> en la barra de abajo.</p>
+<section class="card" id="compose-card" aria-labelledby="h-compose">
+<h2 id="h-compose">Tu mensaje</h2>
+<label class="field-label" for="msg">Palabras o frase a transmitir</label>
+<textarea id="msg" maxlength="24" placeholder="Ej: HOLA MUNDO">SOS</textarea>
+<div class="char-count"><span id="char-count">3</span>/24</div>
+<div class="chips" aria-label="Frases de ejemplo">
+<button type="button" class="chip" data-phrase="SOS">SOS</button>
+<button type="button" class="chip" data-phrase="HOLA MUNDO">HOLA MUNDO</button>
+<button type="button" class="chip" data-phrase="GRACIAS">GRACIAS</button>
+<button type="button" class="chip" data-phrase="TE QUIERO">TE QUIERO</button>
+<button type="button" class="chip" data-phrase="VAMOS EQUIPO">VAMOS EQUIPO</button>
+</div>
+<div class="mode-box">
+<div class="opt-label">Interruptor Aprendizaje / Real</div>
+<div class="seg" role="group" aria-label="Modo de velocidad en Transmitir">
+<button type="button" data-mode-choice="aprendizaje" aria-pressed="true">Aprendizaje</button>
+<button type="button" data-mode-choice="real" aria-pressed="false">Real</button>
+</div>
+<p class="mode-note" data-mode-note><b>Aprendizaje:</b> punto de 180 ms y raya de 540 ms. El audio de referencia suena exactamente a esa misma velocidad lenta que el llenado visual de las notas.</p>
+</div>
+<div class="row">
+<button type="button" class="btn btn-primary" id="btn-build">Crear partitura</button>
+</div>
+<p class="hint" id="compose-hint">Máximo 24 caracteres. Se toca palabra por palabra.</p>
+</section>
+
+<section class="card" id="board-card" aria-labelledby="h-play" hidden>
+<h2 id="h-play">Toca la partitura</h2>
+<div class="stats" id="stats">
+<div class="stat"><div class="k">Puntos</div><div class="v" id="st-score">0</div></div>
+<div class="stat"><div class="k">Combo</div><div class="v" id="st-combo">×0</div></div>
+<div class="stat"><div class="k">Señal</div><div class="signal-v"><span class="signal-face" id="st-face" aria-hidden="true">😊</span><span class="lives" id="st-lives" aria-label="3 corazones de señal"><svg class="heart" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.7C6.4 16.9 3 13.6 3 9.9 3 7.2 5 5 7.6 5c1.7 0 3.3.9 4.4 2.4C13.1 5.9 14.7 5 16.4 5 19 5 21 7.2 21 9.9c0 3.7-3.4 7-9 10.8z"/></svg><svg class="heart" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.7C6.4 16.9 3 13.6 3 9.9 3 7.2 5 5 7.6 5c1.7 0 3.3.9 4.4 2.4C13.1 5.9 14.7 5 16.4 5 19 5 21 7.2 21 9.9c0 3.7-3.4 7-9 10.8z"/></svg><svg class="heart" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.7C6.4 16.9 3 13.6 3 9.9 3 7.2 5 5 7.6 5c1.7 0 3.3.9 4.4 2.4C13.1 5.9 14.7 5 16.4 5 19 5 21 7.2 21 9.9c0 3.7-3.4 7-9 10.8z"/></svg></span></div><div class="signal-msg" id="st-signal-msg">Te recibe perfecto</div></div>
+<div class="stat"><div class="k">Avance</div><div class="v" id="st-prog">0%</div></div>
+</div>
+<div class="progress-outer"><div class="progress-inner" id="prog-bar"></div></div>
+<div class="word-line" id="word-line"></div>
+<div class="track-wrap" id="track-wrap"><div class="track" id="track" aria-label="Partitura en clave morse"></div></div>
+<div class="feedback" id="feedback" aria-live="polite">Pulsa «Empezar transmisión» cuando estés listo.</div>
+<div class="target-line" id="target-line"></div>
+<button type="button" class="pad" id="pad" disabled aria-label="Manipulador: mantén presionado para transmitir"><span class="pad-circle" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M12 11a3 3 0 0 0-3 3c0 2.5.5 4.8 1.4 6.5"/><path d="M12 11a3 3 0 0 1 3 3c0 1.8-.2 3.4-.7 4.9"/><path d="M5.5 10.5A8 8 0 0 1 12 3a8 8 0 0 1 7.6 5.1c.5 1.3.7 2.8.6 4.4"/><path d="M3.6 13.5c.3 2.9 1 5.4 2.1 7.5"/><path d="M12 14c0 2.2.3 4.2 1 6"/></svg></span></button>
+<p class="pad-hint">Mantén presionado el círculo · o usa la barra espaciadora</p>
+<div class="start-row">
+<button type="button" class="btn btn-primary" id="btn-start">Empezar transmisión</button>
+<button type="button" class="btn btn-ghost" id="btn-listen-board">Escuchar clave</button>
+<button type="button" class="btn btn-ghost" id="btn-listen-real-board">Escuchar a velocidad real</button>
+</div>
+</section>
+
+<section class="card results" id="results" aria-labelledby="h-results">
+<div class="big" id="res-title">¡Transmisión completa!</div>
+<p id="res-text"></p>
+<div class="grid">
+<div class="stat"><div class="k">Puntos</div><div class="v" id="res-score">0</div></div>
+<div class="stat"><div class="k">Precisión</div><div class="v" id="res-acc">0%</div></div>
+<div class="stat"><div class="k">Perfectas</div><div class="v" id="res-perfect">0</div></div>
+<div class="stat"><div class="k">Mejor combo</div><div class="v" id="res-combo">×0</div></div>
+</div>
+<p style="font-size:13px">¿Ya lo dominas con guía? El aprendizaje real está en <b>Sin guía</b> y en los <b>Retos a ciegas</b>.</p>
+<div class="btns">
+<button type="button" class="btn btn-primary" id="btn-retry">Reintentar</button>
+<button type="button" class="btn btn-ghost" id="btn-new">Nuevo mensaje</button>
+<button type="button" class="btn btn-ghost" data-goto="retos">Ir a retos</button>
+</div>
+</section>
+</section>
+
+<!-- ============ APRENDER ============ -->
+<section class="view" id="view-aprender">
+<h1>Aprende el alfabeto tocándolo</h1>
+<p class="lede">Esto ya no es una tabla para mirar: <b>toca cualquier letra</b> y suena su clave, se ilumina símbolo por símbolo y abajo puedes practicarla con el manipulador hasta que te salga.</p>
+<section class="card">
+<h2>Detalle y práctica</h2>
+<div class="learn-big">
+<div class="lb-char" id="learn-char">S</div>
+<div class="lb-morse" id="learn-morse"></div>
+<div class="learn-word" id="learn-word"></div>
+</div>
+<div class="practice-track" id="learn-track"></div>
+<div class="feedback" id="learn-feedback" aria-live="polite">Toca una letra de abajo para empezar.</div>
+<button type="button" class="pad small" id="learn-pad" aria-label="Practicar la letra: mantén presionado"><span class="pad-circle" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M12 11a3 3 0 0 0-3 3c0 2.5.5 4.8 1.4 6.5"/><path d="M12 11a3 3 0 0 1 3 3c0 1.8-.2 3.4-.7 4.9"/><path d="M5.5 10.5A8 8 0 0 1 12 3a8 8 0 0 1 7.6 5.1c.5 1.3.7 2.8.6 4.4"/><path d="M3.6 13.5c.3 2.9 1 5.4 2.1 7.5"/><path d="M12 14c0 2.2.3 4.2 1 6"/></svg></span></button>
+<p class="pad-hint">Mantén para rellenar el símbolo que brilla · suelta al llenarse</p>
+<div class="start-row">
+<button type="button" class="btn btn-primary btn-small" id="btn-learn-listen">Escuchar esta letra</button>
+<button type="button" class="btn btn-ghost btn-small" id="btn-learn-reset">Repetir práctica</button>
+<button type="button" class="btn btn-ghost btn-small" id="btn-learn-random">Letra al azar</button>
+</div>
+<p class="hint">Truco para memorizar: di la letra en voz alta mientras la tocas. Punto = toque corto, raya = mantén como 3 puntos.</p>
+</section>
+<section class="card">
+<h2>Alfabeto morse — toca para oír y practicar</h2>
+<div class="alpha-grid" id="alpha-grid"></div>
+</section>
+</section>
+
+<!-- ============ SIN GUÍA / LIBRE ============ -->
+<section class="view" id="view-libre">
+<h1>Sin guía: crea tú solo</h1>
+<p class="lede">Aquí no hay partitura. Tú tocas el manipulador de memoria y la app <b>decodifica</b> lo que hiciste: toque corto = punto, toque largo = raya. La letra se cierra sola tras una pausa breve y el espacio llega tras una pausa más larga. Sin penalización por tardar entre letras: escribe a tu ritmo, sin perder señal por esperar.</p>
+<section class="card">
+<h2>Tu transmisión libre</h2>
+<div class="mode-box">
+<div class="opt-label">Interruptor Aprendizaje / Real</div>
+<div class="seg" role="group" aria-label="Modo de velocidad en Sin guía">
+<button type="button" data-mode-choice="aprendizaje" aria-pressed="false">Aprendizaje</button>
+<button type="button" data-mode-choice="real" aria-pressed="true">Real</button>
+</div>
+<p class="mode-note" data-mode-note><b>Real:</b> punto de 60 ms y raya de 180 ms, como un telégrafo real. En Sin guía la letra se corta sola a los 200 ms de silencio y el espacio a los 450 ms, sin penalización por tardar entre letras.</p>
+</div>
+<div class="free-output">
+<div class="free-decoded" id="free-decoded" aria-label="Texto decodificado">—</div>
+<div class="free-symbols" id="free-symbols" aria-label="Símbolos tocados"></div>
+<div class="free-current" id="free-current">Letra en curso: <b>—</b></div>
+</div>
+<div class="feedback" id="free-feedback" aria-live="polite">Mantén el círculo: corto para punto, largo para raya.</div>
+<button type="button" class="pad" id="free-pad" aria-label="Manipulador libre: mantén presionado"><span class="pad-circle" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M12 11a3 3 0 0 0-3 3c0 2.5.5 4.8 1.4 6.5"/><path d="M12 11a3 3 0 0 1 3 3c0 1.8-.2 3.4-.7 4.9"/><path d="M5.5 10.5A8 8 0 0 1 12 3a8 8 0 0 1 7.6 5.1c.5 1.3.7 2.8.6 4.4"/><path d="M3.6 13.5c.3 2.9 1 5.4 2.1 7.5"/><path d="M12 14c0 2.2.3 4.2 1 6"/></svg></span></button>
+<p class="pad-hint">En Real: pausa de 200 ms = fin de letra · pausa de 450 ms = espacio · también con barra espaciadora · sin penalización por esperar más entre letras</p>
+<div class="start-row">
+<button type="button" class="btn btn-ghost btn-small" id="free-close-letter">Cerrar letra ya</button>
+<button type="button" class="btn btn-ghost btn-small" id="free-space">Espacio</button>
+<button type="button" class="btn btn-ghost btn-small" id="free-undo">Borrar última letra</button>
+<button type="button" class="btn btn-ghost btn-small" id="free-clear">Limpiar todo</button>
+</div>
+<div class="start-row">
+<button type="button" class="btn btn-primary btn-small" id="free-listen">Escuchar lo que escribí</button>
+<button type="button" class="btn btn-ghost btn-small" id="free-check-toggle">Comprobar contra una palabra…</button>
+</div>
+<div id="free-check" hidden>
+<label class="field-label" for="free-target" style="margin-top:12px">Palabra que intentabas escribir (sin ver su morse)</label>
+<textarea id="free-target" maxlength="16" placeholder="Ej: LUNA" style="min-height:44px"></textarea>
+<div class="row"><button type="button" class="btn btn-primary btn-small" id="free-check-btn">Comprobar</button></div>
+<p class="hint" id="free-check-result"></p>
+</div>
+<p class="hint">Reto personal: escribe tu nombre completo sin mirar el alfabeto. Si te atoras, vuelve a Aprender, practica solo esa letra y regresa.</p>
+</section>
+</section>
+
+<!-- ============ RETOS ============ -->
+<section class="view" id="view-retos">
+<h1>Retos que sí enseñan</h1>
+<p class="lede">Sin partitura a la vista. Aquí entrenas el <b>oído</b>, la <b>memoria</b> y formar palabras <b>a ciegas</b>: eso es lo que hace que el morse se te quede en el cerebro.</p>
+<section class="card">
+<h2>Elige tu reto</h2>
+<div class="challenge-list">
+<button type="button" class="challenge-btn sel" data-challenge="blind"><b>Palabra a ciegas</b><span>Ves la palabra, pero NO su morse. Fórmala con el manipulador solo de memoria.</span></button>
+<button type="button" class="challenge-btn" data-challenge="ear"><b>Oído: ¿qué letra sonó?</b><span>Escuchas una clave sin verla y eliges qué letra es. Entrena el oído real de radio.</span></button>
+<button type="button" class="challenge-btn" data-challenge="sight"><b>Lectura: ¿qué letra es esta?</b><span>Ves solo puntos y rayas, sin la letra. La reconoces de memoria.</span></button>
+</div>
+</section>
+
+<section class="card" id="challenge-blind">
+<h2>Palabra a ciegas</h2>
+<div class="chips" id="blind-chips"></div>
+<div class="blind-word" id="blind-word">SOL</div>
+<div class="blind-progress" id="blind-progress"></div>
+<div class="feedback" id="blind-feedback" aria-live="polite">Toca el manipulador: corto = punto, largo = raya.</div>
+<button type="button" class="pad small" id="blind-pad" aria-label="Formar la palabra a ciegas"><span class="pad-circle" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M12 11a3 3 0 0 0-3 3c0 2.5.5 4.8 1.4 6.5"/><path d="M12 11a3 3 0 0 1 3 3c0 1.8-.2 3.4-.7 4.9"/><path d="M5.5 10.5A8 8 0 0 1 12 3a8 8 0 0 1 7.6 5.1c.5 1.3.7 2.8.6 4.4"/><path d="M3.6 13.5c.3 2.9 1 5.4 2.1 7.5"/><path d="M12 14c0 2.2.3 4.2 1 6"/></svg></span></button>
+<p class="pad-hint">Sin guía visual · la app solo te dice si el símbolo fue correcto</p>
+<div class="start-row">
+<button type="button" class="btn btn-ghost btn-small" id="blind-hint">Ver pista de esta letra</button>
+<button type="button" class="btn btn-ghost btn-small" id="blind-restart">Reiniciar palabra</button>
+<button type="button" class="btn btn-ghost btn-small" id="blind-random">Otra palabra</button>
+</div>
+<p class="hint" id="blind-stats">Fallos en esta palabra: 0</p>
+</section>
+
+<section class="card" id="challenge-quiz" hidden>
+<h2 id="quiz-title">¿Qué letra sonó?</h2>
+<div class="stats" style="grid-template-columns:repeat(3,1fr)">
+<div class="stat"><div class="k">Aciertos</div><div class="v" id="quiz-ok">0</div></div>
+<div class="stat"><div class="k">Racha</div><div class="v" id="quiz-streak">0</div></div>
+<div class="stat"><div class="k">Rondas</div><div class="v" id="quiz-rounds">0</div></div>
+</div>
+<div class="quiz-morse" id="quiz-morse" hidden></div>
+<div class="feedback" id="quiz-feedback" aria-live="polite">Pulsa «Nueva ronda» para empezar.</div>
+<div class="start-row"><button type="button" class="btn btn-primary btn-small" id="quiz-play">Escuchar la letra</button>
+<button type="button" class="btn btn-ghost btn-small" id="quiz-next">Nueva ronda</button></div>
+<div class="quiz-opts" id="quiz-opts"></div>
+<p class="hint">Consejo: en el reto de oído, cuenta los sonidos primero (¿cuántos son?) y luego decide si son cortos o largos. Así lo hacen los radioaficionados.</p>
+</section>
+</section>
+
+</main>
+
+<nav class="bottomnav" aria-label="Modos de la app">
+<button type="button" class="navbtn" data-goto="transmitir" aria-selected="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 10v4M8 7v10M12 4v16M16 7v10M20 10v4"/></svg>Transmitir</button>
+<button type="button" class="navbtn" data-goto="aprender" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 19V6a1 1 0 0 1 1-1h13v13H5a1 1 0 0 0-1 1zm0 0a1 1 0 0 0 1 1h13"/></svg>Aprender</button>
+<button type="button" class="navbtn" data-goto="libre" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Sin guía</button>
+<button type="button" class="navbtn" data-goto="retos" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 3a5 5 0 0 0-5 5c0 2 .8 3.2 1.6 4.3.7 1 1.4 1.9 1.4 3.2h10c0-1.3.7-2.2 1.4-3.2C19.2 11.2 20 10 20 8a5 5 0 0 0-5-5zM9 21h6M10 17h4"/></svg>Retos</button>
+</nav>
+</div>
+
+<div class="tut-box" id="tut-box" role="dialog" aria-label="Tutorial">
+<div class="tut-count" id="tut-count">PASO 1 DE 7</div>
+<h3 id="tut-title"></h3><p id="tut-text"></p>
+<div class="tut-sos" id="tut-sos" hidden>S <span>···</span> · O <span>−−−</span> · S <span>···</span></div>
+<div class="tut-nav"><button type="button" class="tut-btn btn-ghost" id="tut-skip">Saltar</button><div class="sp"><button type="button" class="tut-btn btn-ghost" id="tut-back">Atrás</button><button type="button" class="tut-btn btn-primary" id="tut-next">Siguiente</button></div></div>
+</div>
+
+<script>
+"use strict";
+var MORSE={"A":"·−","B":"−···","C":"−·−·","D":"−··","E":"·","F":"··−·","G":"−−·","H":"····","I":"··","J":"·−−−","K":"−·−","L":"·−··","M":"−−","N":"−·","Ñ":"−−·−−","O":"−−−","P":"·−−·","Q":"−−·−","R":"·−·","S":"···","T":"−","U":"··−","V":"···−","W":"·−−","X":"−··−","Y":"−·−−","Z":"−−··","0":"−−−−−","1":"·−−−−","2":"··−−−","3":"···−−","4":"····−","5":"·····","6":"−····","7":"−−···","8":"−−−··","9":"−−−−·",".":"·−·−·−",",":"−−··−−","?":"··−−··","!":"−·−·−−"};
+var REVERSE={}; Object.keys(MORSE).forEach(function(k){REVERSE[MORSE[k]]=k;});
+var MNEMO={"A":"Ár-bol","B":"Bo-mberos","E":"Es","H":"Hu-mi-tos","L":"Li-mo-na-da","M":"Ma-má","O":"O-jo-gor-do","S":"Sil-bi-dos","T":"Tos"};
+var $=function(id){return document.getElementById(id);};
+var speedMul=1, currentView="transmitir";
+/* Interruptor Aprendizaje / Real: dos perfiles de tiempo, audio y visual siempre sincronizados */
+var TIMINGS={
+  aprendizaje:{dot:180,dash:540,symGap:180,letterGap:540,wordGap:1080,gapIntra:180,gapLetter:540,letterCut:900,wordCut:2000,threshold:360,overMs:220},
+  real:{dot:60,dash:180,symGap:60,letterGap:200,wordGap:450,gapIntra:60,gapLetter:200,letterCut:200,wordCut:450,threshold:120,overMs:90}
+};
+var speedMode="aprendizaje";
+function timingFor(mode){return TIMINGS[mode||speedMode]||TIMINGS.aprendizaje;}
+function curTiming(){return timingFor(speedMode);}
+var MODE_NOTES={
+  aprendizaje:"<b>Aprendizaje:</b> punto de 180 ms y raya de 540 ms. El audio de referencia suena exactamente a esa misma velocidad lenta que el llenado visual de las notas.",
+  real:"<b>Real:</b> punto de 60 ms y raya de 180 ms, como un telégrafo real. En Sin guía la letra se corta sola a los 200 ms de silencio y el espacio a los 450 ms, sin penalización por tardar entre letras."
+};
+function setSpeedMode(mode,keepGame){
+  if(!TIMINGS[mode])mode="aprendizaje";
+  var changed=speedMode!==mode;
+  speedMode=mode;speedMul=1;
+  document.querySelectorAll("[data-mode-choice]").forEach(function(b){b.setAttribute("aria-pressed",b.getAttribute("data-mode-choice")===mode?"true":"false");});
+  document.querySelectorAll("[data-mode-note]").forEach(function(el){el.innerHTML=MODE_NOTES[mode];});
+  if(changed&&!keepGame&&typeof resetGame==="function"&&words&&words.length&&currentView==="transmitir"){
+    var wasHidden=boardCard.hidden;
+    if(!wasHidden)resetGame();
+  }
+}
+function normalize(t){return t.toUpperCase().replace(/[ÁÀÄÂ]/g,"A").replace(/[ÉÈËÊ]/g,"E").replace(/[ÍÌÏÎ]/g,"I").replace(/[ÓÒÖÔ]/g,"O").replace(/[ÚÙÜÛ]/g,"U");}
+/* Audio */
+var actx=null,toneOsc=null,toneGain=null;
+function audio(){if(!actx){var AC=window.AudioContext||window.webkitAudioContext;if(AC)actx=new AC();}if(actx&&actx.state==="suspended")actx.resume();return actx;}
+function startTone(){if(!audio())return;stopTone();toneOsc=actx.createOscillator();toneGain=actx.createGain();toneOsc.type="sine";toneOsc.frequency.value=620;toneGain.gain.setValueAtTime(0.0001,actx.currentTime);toneGain.gain.exponentialRampToValueAtTime(0.22,actx.currentTime+0.012);toneOsc.connect(toneGain);toneGain.connect(actx.destination);toneOsc.start();}
+function stopTone(){if(toneOsc&&actx){try{toneGain.gain.exponentialRampToValueAtTime(0.0001,actx.currentTime+0.015);toneOsc.stop(actx.currentTime+0.03);}catch(e){}}toneOsc=null;toneGain=null;}
+function blip(f,d,type,vol){if(!audio())return;var o=actx.createOscillator(),g=actx.createGain();o.type=type||"sine";o.frequency.value=f;g.gain.setValueAtTime(vol||0.18,actx.currentTime);g.gain.exponentialRampToValueAtTime(0.0001,actx.currentTime+d);o.connect(g);g.connect(actx.destination);o.start();o.stop(actx.currentTime+d+0.02);}
+function buzz(){blip(150,0.22,"square",0.16);}
+function perfectSound(){blip(920,0.09,"sine",0.15);}
+function winSound(){[523,659,784,1046].forEach(function(f,i){setTimeout(function(){blip(f,0.16,"sine",0.16);},i*120);});}
+function playSymbols(symbols,onDone,highlight,modeOverride){
+  if(!audio()){if(onDone)onDone();return;}
+  var t=timingFor(modeOverride),i=0;
+  function step(){
+    if(i>=symbols.length){if(onDone)onDone();return;}
+    var s=symbols[i];var idx=i;i++;
+    if(highlight)highlight(idx,true);
+    startTone();
+    setTimeout(function(){stopTone();if(highlight)highlight(idx,false);setTimeout(step,t.symGap);},s==="·"?t.dot:t.dash);
+  }
+  step();
+}
+function playText(text,onDone,modeOverride){
+  var t=timingFor(modeOverride);
+  var chars=normalize(text).split("").filter(function(c){return c===" "||MORSE[c];});
+  var ci=0,si=0;
+  if(!audio()){if(onDone)onDone();return;}
+  function step(){
+    if(ci>=chars.length){if(onDone)onDone();return;}
+    var c=chars[ci];
+    if(c===" "){ci++;si=0;setTimeout(step,t.wordGap);return;}
+    var code=MORSE[c];
+    if(si>=code.length){ci++;si=0;setTimeout(step,t.letterGap);return;}
+    var s=code[si];si++;
+    startTone();
+    setTimeout(function(){stopTone();setTimeout(step,si>=code.length?0:t.symGap);},s==="·"?t.dot:t.dash);
+  }
+  step();
+}
+/* Navegación entre vistas (la clave del rediseño móvil: una pantalla por modo, sin rollo infinito) */
+var VIEW_LABELS={transmitir:"Transmitir",aprender:"Aprender",libre:"Sin guía",retos:"Retos"};
+/* Cabecera que se oculta AL DESLIZAR, como en las apps de música, con snap.
+   Problema anterior: la altura era función directa de scrollTop, así que
+   si el usuario se detenía a mitad, la cabecera se quedaba a mitad, y un
+   deslizamiento suave a veces ni se detectaba como gesto.
+   Solución:
+   1) Estado propio e incremental (headerProgress 0 = visible, 1 = oculta):
+      cada evento de scroll suma su delta (dy) al progreso, sin exigir
+      velocidad ni distancia mínima. Un deslizamiento suave o lento mueve
+      la cabecera igual que uno rápido, porque se acumulan todos los dy.
+   2) Umbral bajo (0.12 ≈ 10 px de recorrido): en cuanto se supera hacia
+      abajo, el destino es ocultarse del todo; hacia arriba, basta bajar
+      de 0.88 para que el destino sea reaparecer completa.
+   3) Snap al soltar / detenerse: cuando dejan de llegar eventos de scroll
+      (debounce de 90 ms, también al touchend/pointerup) se anima el
+      progreso hasta 0 o 1 con ease-out. La cabecera nunca queda a medias.
+   4) Desacoplada de scrollTop tras el snap: animar la altura no cambia
+      scrollTop, y el siguiente scroll parte del progreso ya completado,
+      así el snap no se revierte solo. En el tope (scrollTop ≈ 0) siempre
+      se muestra completa. */
+var headerEl=$("app-header"),HEADER_FULL=104,HEADER_RANGE=84;
+var HEADER_SNAP_THRESHOLD=0.12,HEADER_SNAP_MS=260;
+var headerProgress=0,headerLastY=null,headerDir=0;
+var headerSnapTimer=null,headerSnapRAF=null,headerSnapping=false;
+var headerReducedMotion=false;
+try{headerReducedMotion=!!(window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches);}catch(e){}
+function renderHeader(){
+  if(!headerEl)return;
+  var p=headerProgress;
+  headerEl.style.height=(HEADER_FULL*(1-p))+"px";
+  var banner=headerEl.firstElementChild;
+  if(banner){banner.style.transform="translateY("+(-16*p)+"px)";banner.style.opacity=String(1-p*0.35);}
+  headerEl.style.pointerEvents=p>=0.99?"none":"";
+  if(p>=0.99)headerEl.setAttribute("aria-hidden","true");else headerEl.removeAttribute("aria-hidden");
+}
+function cancelHeaderSnap(){
+  if(headerSnapTimer){clearTimeout(headerSnapTimer);headerSnapTimer=null;}
+  if(headerSnapRAF){cancelAnimationFrame(headerSnapRAF);headerSnapRAF=null;}
+  headerSnapping=false;
+}
+function snapHeader(){
+  headerSnapTimer=null;
+  var sc=$("main-scroll");if(!sc||!headerEl)return;
+  if(sc.scrollTop<=0.5){headerProgress=0;headerDir=0;headerLastY=sc.scrollTop;renderHeader();return;}
+  var target;
+  if(headerDir>0)target=headerProgress>=HEADER_SNAP_THRESHOLD?1:0;
+  else if(headerDir<0)target=headerProgress<=(1-HEADER_SNAP_THRESHOLD)?0:1;
+  else target=headerProgress>=0.5?1:0;
+  if(Math.abs(target-headerProgress)<0.001){headerProgress=target;renderHeader();return;}
+  if(headerReducedMotion){headerProgress=target;renderHeader();headerLastY=sc.scrollTop;return;}
+  if(headerSnapRAF)cancelAnimationFrame(headerSnapRAF);
+  headerSnapping=true;
+  var from=headerProgress,startTime=null;
+  function step(ts){
+    if(startTime===null)startTime=ts;
+    var t=Math.min((ts-startTime)/HEADER_SNAP_MS,1);
+    var eased=1-Math.pow(1-t,3);
+    headerProgress=from+(target-from)*eased;
+    renderHeader();
+    if(t<1){headerSnapRAF=requestAnimationFrame(step);}
+    else{headerProgress=target;headerSnapRAF=null;headerSnapping=false;renderHeader();var s2=$("main-scroll");if(s2)headerLastY=s2.scrollTop;}
+  }
+  headerSnapRAF=requestAnimationFrame(step);
+}
+function scheduleHeaderSnap(delay){
+  if(headerSnapTimer)clearTimeout(headerSnapTimer);
+  headerSnapTimer=setTimeout(snapHeader,typeof delay==="number"?delay:90);
+}
+function updateHeaderCollapse(){
+  var sc=$("main-scroll");if(!sc||!headerEl)return;
+  /* Las vistas llaman a esto tras poner scrollTop = 0: cabecera completa. */
+  if(sc.scrollTop<=0.5){cancelHeaderSnap();headerProgress=0;headerDir=0;headerLastY=sc.scrollTop;renderHeader();return;}
+  headerLastY=sc.scrollTop;renderHeader();
+}
+(function(){
+  var sc=$("main-scroll");if(!sc)return;
+  sc.addEventListener("scroll",function(){
+    var y=sc.scrollTop;
+    if(headerLastY===null)headerLastY=y;
+    var dy=y-headerLastY;
+    headerLastY=y;
+    if(headerSnapping){if(headerSnapRAF)cancelAnimationFrame(headerSnapRAF);headerSnapRAF=null;headerSnapping=false;}
+    if(y<=0.5){headerProgress=0;headerDir=0;if(headerSnapTimer){clearTimeout(headerSnapTimer);headerSnapTimer=null;}renderHeader();return;}
+    if(dy!==0){
+      headerDir=dy>0?1:-1;
+      headerProgress=Math.min(1,Math.max(0,headerProgress+dy/HEADER_RANGE));
+      renderHeader();
+    }
+    scheduleHeaderSnap(90);
+  },{passive:true});
+  /* Al soltar el dedo / el puntero, pedir el snap cuanto antes; si aún hay
+     inercia, los eventos de scroll que sigan lo reprogramarán y el snap
+     final ocurrirá cuando el scroll se detenga de verdad. */
+  sc.addEventListener("touchend",function(){scheduleHeaderSnap(60);},{passive:true});
+  sc.addEventListener("touchcancel",function(){scheduleHeaderSnap(60);},{passive:true});
+  sc.addEventListener("pointerup",function(){scheduleHeaderSnap(60);},{passive:true});
+})();
+function applyViewDefaultMode(name){
+  /* Defecto por vista: Sin guía SIEMPRE entra en Real (punto 60 ms, raya 180 ms,
+     corte de letra 200 ms, espacio 450 ms). Aprendizaje queda solo como opción
+     manual que el usuario puede elegir ya dentro de Sin guía. El modo global
+     nunca debe quedar en Aprendizaje al entrar a Sin guía. */
+  if(name==="libre")setSpeedMode("real",true);
+  else if(name==="transmitir"||name==="aprender")setSpeedMode("aprendizaje",true);
+}
+function gotoView(name){
+  currentView=name;
+  applyViewDefaultMode(name);
+  document.querySelectorAll(".view").forEach(function(v){v.classList.remove("active");});
+  $("view-"+name).classList.add("active");
+  document.querySelectorAll(".navbtn").forEach(function(b){b.setAttribute("aria-selected",b.getAttribute("data-goto")===name?"true":"false");});
+  $("mode-label").textContent=VIEW_LABELS[name];
+  $("main-scroll").scrollTop=0;
+  updateHeaderCollapse();
+  /* Reafirmar el defecto tras activar la vista, para que ningún otro paso
+     (tutorial, cierre de panel, etc.) deje el interruptor en Aprendizaje. */
+  applyViewDefaultMode(name);
+  if(name==="libre"&&typeof freeTimers==="function"&&typeof freeBuffer!=="undefined"&&freeBuffer)freeTimers();
+  endTutorial();
+}
+document.querySelectorAll("[data-goto]").forEach(function(b){b.addEventListener("click",function(){gotoView(b.getAttribute("data-goto"));closeDrawer();});});
+/* Enlace del manipulador pensado para el pulgar:
+   - Ya no se usa setPointerCapture ni preventDefault en toques táctiles:
+     eso secuestraba el gesto y bloqueaba el scroll de la pantalla.
+   - El botón tiene touch-action:pan-y (CSS), así que si el gesto resulta
+     ser un deslizamiento vertical, el navegador toma el control, desplaza
+     la vista y dispara pointercancel.
+   - Tanto pointercancel como un movimiento vertical claro (>=14 px y más
+     vertical que horizontal) llaman a cancel(), que ABORTA la pulsación
+     sin puntuarla: no cuenta como punto/raya, no falla la nota y no quita
+     corazón. Deslizar nunca se castiga como error de juego.
+   - Solo pointerup sobre una pulsación no cancelada llama a up(), que es
+     la única vía que evalúa la nota. */
+function bindPad(el,down,up,cancel){
+  var startX=0,startY=0,active=false,cancelled=false;
+  function abort(){
+    if(cancelled)return;cancelled=true;active=false;
+    if(cancel)cancel();else up();
+  }
+  el.addEventListener("pointerdown",function(e){
+    if(typeof e.button==="number"&&e.button!==0)return;
+    active=true;cancelled=false;startX=e.clientX||0;startY=e.clientY||0;
+    if(e.pointerType==="mouse")e.preventDefault();
+    down();
+  });
+  el.addEventListener("pointermove",function(e){
+    if(!active||cancelled)return;
+    var dx=(e.clientX||0)-startX,dy=(e.clientY||0)-startY;
+    if(Math.abs(dy)>=14&&Math.abs(dy)>Math.abs(dx))abort();
+  });
+  el.addEventListener("pointerup",function(e){
+    if(cancelled){cancelled=false;active=false;return;}
+    if(!active)return;active=false;up();
+  });
+  el.addEventListener("pointercancel",function(){
+    if(cancelled){cancelled=false;active=false;return;}
+    if(!active)return;abort();cancelled=false;
+  });
+  el.addEventListener("contextmenu",function(e){e.preventDefault();});
+}
+
+/* ============ TRANSMITIR (juego con guía) ============ */
+var msgEl=$("msg"),trackEl=$("track"),padEl=$("pad"),feedbackEl=$("feedback"),targetEl=$("target-line"),boardCard=$("board-card"),resultsEl=$("results");
+var seq=[],letters=[],cleanText="",words=[],wordIdx=0,totalSymsAll=0,doneSymsBefore=0;
+function countSyms(t){var n=0;t.split("").forEach(function(c){if(MORSE[c])n+=MORSE[c].length;});return n;}
+function buildWord(word){
+  seq=[];letters=[];trackEl.innerHTML="";
+  word.split("").forEach(function(ch,ci){
+    var letterId=letters.length;
+    var group=document.createElement("div");group.className="letter";
+    var syms=document.createElement("div");syms.className="syms";group.appendChild(syms);
+    var label=document.createElement("div");label.className="ch";label.textContent=ch;group.appendChild(label);
+    trackEl.appendChild(group);
+    var letter={char:ch,groupEl:group,symTokens:[]};letters.push(letter);
+    MORSE[ch].split("").forEach(function(s,si){
+      if(si>0)addGap("intra",letterId);
+      var el=document.createElement("div");el.className="sym "+(s==="·"?"dot":"dash");
+      var fill=document.createElement("div");fill.className="fill";el.appendChild(fill);syms.appendChild(el);
+      var tok={kind:"sym",sym:s,letterId:letterId,el:el,fillEl:fill,resolved:false,failed:false};
+      seq.push(tok);letter.symTokens.push(tok);
+    });
+    if(ci<word.length-1)addGap("letter",letterId);
+  });
+  function addGap(kind,letterId){
+    var el=document.createElement("div");el.className="gap "+kind;
+    var line=document.createElement("div");line.className="gapline";var fill=document.createElement("div");fill.className="gapfill";
+    line.appendChild(fill);el.appendChild(line);trackEl.appendChild(el);
+    seq.push({kind:"gap",gapKind:kind,letterId:letterId,el:el,fillEl:fill,resolved:false,failed:false});
+  }
+  $("word-line").innerHTML=words.length>1?"Palabra "+(wordIdx+1)+" de "+words.length+" · <b>"+word+"</b>":"Mensaje · <b>"+word+"</b>";
+}
+function build(){
+  var raw=normalize(msgEl.value).replace(/\s+/g," ").trim();
+  cleanText=raw.split("").filter(function(c){return c===" "||MORSE[c];}).join("").replace(/\s+/g," ").trim();
+  var hint=$("compose-hint");
+  if(!cleanText){hint.textContent="Escribe al menos una letra o número.";hint.classList.add("error");return false;}
+  hint.classList.remove("error");
+  hint.textContent=raw!==cleanText?"Se quitaron caracteres sin morse. Mensaje: «"+cleanText+"»":"Partitura lista: «"+cleanText+"». Se toca palabra por palabra.";
+  words=cleanText.split(" ");wordIdx=0;totalSymsAll=countSyms(cleanText);doneSymsBefore=0;
+  buildWord(words[0]);boardCard.hidden=false;resultsEl.classList.remove("show");resetGame();return true;
+}
+var phase="idle",idx=0,holding=false,pressStart=0,gapStart=0,holdDead=false,gapLongFaulted=false;
+var score=0,combo=0,maxCombo=0,lives=3,faults=0,perfects=0,goods=0,failedSyms=0,resolvedSyms=0,rafId=null;
+function targetFor(t){var tm=curTiming();return t.sym==="·"?tm.dot:tm.dash;}
+function gapFor(t){var tm=curTiming();return t.gapKind==="intra"?tm.gapIntra:tm.gapLetter;}
+function cur(){return seq[idx];}
+function resetGame(){
+  phase="ready";idx=0;holding=false;holdDead=false;score=0;combo=0;maxCombo=0;lives=3;faults=0;perfects=0;goods=0;failedSyms=0;resolvedSyms=0;doneSymsBefore=0;wordIdx=0;
+  if(words.length)buildWord(words[0]);
+  padEl.disabled=true;padEl.classList.remove("pressed");$("btn-start").style.display="";
+  setFeedback("Pulsa «Empezar transmisión» cuando estés listo.","");targetEl.textContent="";updateStats();stopLoop();
+}
+function updateStats(){
+  $("st-score").textContent=score;$("st-combo").textContent="×"+combo;
+  var pct=totalSymsAll?Math.round((doneSymsBefore+resolvedSyms)/totalSymsAll*100):0;
+  $("st-prog").textContent=pct+"%";$("prog-bar").style.width=pct+"%";
+  var lv=$("st-lives").children;for(var i=0;i<lv.length;i++)lv[i].classList.toggle("off",i>=lives);
+  $("st-lives").setAttribute("aria-label",lives+" de 3 corazones de señal");
+  var face=$("st-face"),m=$("st-signal-msg");
+  if(lives>=3){face.textContent="😊";m.textContent="Te recibe perfecto";m.classList.remove("danger");}
+  else if(lives===2){face.textContent="😕";m.textContent="Te escucha entrecortado";m.classList.remove("danger");}
+  else if(lives===1){face.textContent="😟";m.textContent="¡Casi no te recibe!";m.classList.add("danger");}
+  else{face.textContent="😵";m.textContent="Ya no te recibe";m.classList.add("danger");}
+  face.classList.remove("worried");void face.offsetWidth;if(lives<3)face.classList.add("worried");
+}
+function setFeedback(t,cls){feedbackEl.textContent=t;feedbackEl.className="feedback"+(cls?" "+cls:"");feedbackEl.classList.remove("pop");void feedbackEl.offsetWidth;feedbackEl.classList.add("pop");}
+function markActive(){
+  seq.forEach(function(t){t.el.classList.remove("active");});
+  var t=cur();if(t)t.el.classList.add("active");
+  if(t&&t.kind==="sym")targetEl.innerHTML=t.sym==="·"?"Sigue: <b>PUNTO</b> · toque corto, suelta al llenarse":"Sigue: <b>RAYA</b> · mantén hasta llenarla";
+  else if(t&&t.kind==="gap")targetEl.innerHTML="Sigue: <b>ESPACIO</b> · suelta y espera a que se llene el hueco";
+}
+function startLoop(){
+  stopLoop();
+  var tick=function(){
+    rafId=requestAnimationFrame(tick);var now=performance.now();
+    if(phase==="sym"&&holding&&!holdDead){var t=cur();if(!t)return;var target=targetFor(t);var el2=now-pressStart;t.fillEl.style.width=Math.min(el2/target*100,100)+"%";if(el2>target+curTiming().overMs){holdDead=true;fail(t,"¡Te pasaste de largo! Suelta el manipulador.");}}
+    if(phase==="gap"){var g=cur();if(!g)return;var gd=gapFor(g);var ge=now-gapStart;g.fillEl.style.width=Math.min(ge/gd*100,100)+"%";if(speedMode!=="real"&&ge>gd*2.6&&!gapLongFaulted){gapLongFaulted=true;fail(g,"¡Espacio demasiado largo! Perdiste el ritmo.");}}
+  };
+  rafId=requestAnimationFrame(tick);
+}
+function stopLoop(){if(rafId)cancelAnimationFrame(rafId);rafId=null;}
+function fail(tok,msg){
+  if(tok.kind==="sym"&&!tok.failed)failedSyms++;
+  tok.failed=true;tok.el.classList.add("failed");faults++;lives--;combo=0;score=Math.max(0,score-50);buzz();
+  if(navigator.vibrate)navigator.vibrate(120);
+  boardCard.classList.remove("shake");void boardCard.offsetWidth;boardCard.classList.add("shake");
+  setFeedback(msg+" −50 pts, pierdes 1 corazón.","bad");updateStats();
+  if(lives<=0)gameOver();
+}
+function resolveSym(tok){
+  tok.resolved=true;resolvedSyms++;tok.el.classList.remove("active");
+  var letter=letters[tok.letterId];
+  if(tok.failed)letter.groupEl.classList.add("has-fail");
+  if(letter.symTokens.every(function(s){return s.resolved;}))letter.groupEl.classList.add("done");
+  updateStats();
+}
+function advance(){
+  idx++;if(idx>=seq.length){wordDone();return;}
+  var t=cur();
+  if(t.kind==="gap"){phase="gap";gapStart=performance.now();gapLongFaulted=false;}else phase="sym";
+  markActive();
+}
+function wordDone(){
+  doneSymsBefore+=resolvedSyms;
+  if(wordIdx>=words.length-1){win();return;}
+  wordIdx++;resolvedSyms=0;phase="between";stopTone();
+  setFeedback("¡Palabra enviada! Sigue: «"+words[wordIdx]+"»","good");targetEl.textContent="";
+  setTimeout(function(){if(phase!=="between")return;buildWord(words[wordIdx]);idx=0;phase="sym";markActive();startLoop();},1100);
+}
+function press(){
+  if(currentView!=="transmitir")return;
+  if(phase!=="sym"&&phase!=="gap")return;
+  if(holding)return;audio();
+  if(phase==="gap"){
+    var g=cur();var gd=gapFor(g);var ge=performance.now()-gapStart;
+    g.resolved=true;g.el.classList.remove("active");
+    if(ge<gd*0.7){fail(g,"¡Espacio muy corto! Había que esperar más.");if(phase==="over")return;}
+    else{g.el.classList.add("done");if(ge<=gd*1.6){score+=25;updateStats();}}
+    idx++;if(idx>=seq.length){wordDone();return;}phase="sym";
+  }
+  if(phase!=="sym")return;
+  holding=true;holdDead=false;pressStart=performance.now();padEl.classList.add("pressed");startTone();markActive();
+}
+function release(){
+  if(!holding)return;holding=false;padEl.classList.remove("pressed");stopTone();
+  if(phase!=="sym")return;
+  var t=cur();if(!t)return;
+  var target=targetFor(t);var elapsed=performance.now()-pressStart;
+  if(holdDead){resolveSym(t);if(phase!=="over")advance();return;}
+  if(elapsed<target*0.62){fail(t,t.sym==="·"?"¡Muy corto! Ese punto no se llenó.":"¡Muy corto! Una raya necesita más tiempo.");resolveSym(t);if(phase!=="over")advance();return;}
+  t.el.classList.add("done");
+  if(elapsed<=target+curTiming().overMs*0.6&&elapsed>=target*0.8){perfects++;combo++;var pts=150+Math.min(combo*5,50);score+=pts;setFeedback("¡Perfecto! +"+pts+" pts","perfect");perfectSound();}
+  else{goods++;combo++;score+=100;setFeedback("¡Bien! +100 pts","good");}
+  maxCombo=Math.max(maxCombo,combo);resolveSym(t);advance();
+}
+function abortPress(){
+  /* El gesto fue un deslizamiento para desplazar la pantalla, no una nota:
+     se suelta el manipulador sin evaluar, sin fallar y sin perder señal,
+     y la nota en curso vuelve a quedar intacta esperando otra pulsación. */
+  if(!holding){padEl.classList.remove("pressed");stopTone();return;}
+  holding=false;holdDead=false;padEl.classList.remove("pressed");stopTone();
+  var t=cur();if(t&&t.kind==="sym"&&!t.resolved&&!t.failed)t.fillEl.style.width="0%";
+}
+function startGame(){
+  if(!words.length)return;resetGame();phase="sym";idx=0;padEl.disabled=false;$("btn-start").style.display="none";
+  setFeedback("¡A transmitir! Mantén presionado para la primera nota.","");markActive();startLoop();
+  padEl.scrollIntoView({behavior:"smooth",block:"center"});
+}
+function fillResults(title,text){
+  $("res-title").textContent=title;$("res-text").textContent=text;$("res-score").textContent=score;
+  var total=perfects+goods+failedSyms;
+  $("res-acc").textContent=(total?Math.round((perfects+goods)/total*100):0)+"%";
+  $("res-perfect").textContent=perfects;$("res-combo").textContent="×"+maxCombo;
+  resultsEl.classList.add("show");resultsEl.scrollIntoView({behavior:"smooth",block:"center"});
+}
+function win(){phase="won";stopLoop();stopTone();padEl.disabled=true;seq.forEach(function(t){t.el.classList.remove("active");});targetEl.textContent="";winSound();fillResults("¡Transmisión completa!","Enviaste «"+cleanText+"» sin perder la señal. Mensaje recibido, cambio y fuera.");}
+function gameOver(){phase="over";stopLoop();stopTone();holding=false;padEl.classList.remove("pressed");padEl.disabled=true;seq.forEach(function(t){t.el.classList.remove("active");});targetEl.textContent="";fillResults("Se cortó la transmisión","Te quedaste sin señal en «"+cleanText+"». Vuelve al modo Aprendizaje en el interruptor o inténtalo de nuevo.");}
+var listening=false;
+function listen(){
+  if(listening||!cleanText)return;listening=true;
+  playText(cleanText,function(){listening=false;padEl.classList.remove("pressed");});
+}
+function listenReal(){
+  if(listening||!cleanText)return;listening=true;
+  playText(cleanText,function(){listening=false;padEl.classList.remove("pressed");},"real");
+}
+/* ============ APRENDER: alfabeto tocable ============ */
+var learnChar="S",learnIdx=0,learnHolding=false,learnStart=0,learnDead=false,learnRaf=null,learnDone=false;
+var alphaGrid=$("alpha-grid");
+Object.keys(MORSE).forEach(function(ch){
+  if(!/[A-ZÑ0-9]/.test(ch))return;
+  var b=document.createElement("button");b.type="button";b.className="alpha-cell";b.setAttribute("data-letter",ch);
+  b.innerHTML='<span class="ac"></span><span class="am"></span>';
+  b.querySelector(".ac").textContent=ch;b.querySelector(".am").textContent=MORSE[ch];
+  b.addEventListener("click",function(){selectLetter(ch,true);});
+  alphaGrid.appendChild(b);
+});
+function renderLearnTrack(){
+  var tr=$("learn-track");tr.innerHTML="";
+  MORSE[learnChar].split("").forEach(function(s,i){
+    var el=document.createElement("div");el.className="sym "+(s==="·"?"dot":"dash");
+    if(i<learnIdx)el.classList.add("done");if(i===learnIdx&&!learnDone)el.classList.add("active");
+    var f=document.createElement("div");f.className="fill";el.appendChild(f);tr.appendChild(el);
+  });
+  var lm=$("learn-morse");lm.innerHTML="";
+  MORSE[learnChar].split("").forEach(function(s){var sp=document.createElement("span");sp.textContent=s;lm.appendChild(sp);});
+}
+function selectLetter(ch,play){
+  learnChar=ch;learnIdx=0;learnDone=false;learnHolding=false;
+  $("learn-pad").classList.remove("pressed");
+  document.querySelectorAll(".alpha-cell").forEach(function(c){c.classList.toggle("sel",c.getAttribute("data-letter")===ch);});
+  $("learn-char").textContent=ch;
+  $("learn-word").innerHTML=MNEMO[ch]?"Ayuda de memoria: <b>"+MNEMO[ch]+"</b> — los guiones marcan las rayas.":"Practícala hasta que salga sin pensar.";
+  renderLearnTrack();
+  setLearnFeedback("Practica la "+ch+": mantén el círculo para rellenar cada símbolo.","");
+  if(play)playLearnLetter();
+}
+function playLearnLetter(){
+  var spans=$("learn-morse").children;
+  document.querySelectorAll(".alpha-cell").forEach(function(c){if(c.getAttribute("data-letter")===learnChar)c.classList.add("playing");});
+  playSymbols(MORSE[learnChar].split(""),function(){
+    document.querySelectorAll(".alpha-cell").forEach(function(c){c.classList.remove("playing");});
+  },function(i,on){if(spans[i])spans[i].classList.toggle("on",on);});
+}
+function learnAbort(){
+  if(!learnHolding)return;learnHolding=false;learnDead=false;cancelAnimationFrame(learnRaf);
+  $("learn-pad").classList.remove("pressed");stopTone();
+  var cell=$("learn-track").children[learnIdx];if(cell&&!learnDone)cell.querySelector(".fill").style.width="0%";
+}
+function setLearnFeedback(t,cls){var f=$("learn-feedback");f.textContent=t;f.className="feedback"+(cls?" "+cls:"");}
+function learnTarget(){var tm=curTiming();return MORSE[learnChar][learnIdx]==="·"?tm.dot:tm.dash;}
+function learnPress(){
+  if(learnDone||learnHolding)return;audio();learnHolding=true;learnDead=false;learnStart=performance.now();
+  $("learn-pad").classList.add("pressed");startTone();
+  cancelAnimationFrame(learnRaf);
+  var tick=function(){
+    learnRaf=requestAnimationFrame(tick);if(!learnHolding)return;
+    var el2=performance.now()-learnStart,target=learnTarget();
+    var cell=$("learn-track").children[learnIdx];if(cell)cell.querySelector(".fill").style.width=Math.min(el2/target*100,100)+"%";
+    if(el2>target+curTiming().overMs){learnDead=true;}
+  };
+  learnRaf=requestAnimationFrame(tick);
+}
+function learnRelease(){
+  if(!learnHolding)return;learnHolding=false;cancelAnimationFrame(learnRaf);
+  $("learn-pad").classList.remove("pressed");stopTone();
+  var elapsed=performance.now()-learnStart,target=learnTarget();
+  var cell=$("learn-track").children[learnIdx];
+  if(learnDead||elapsed<target*0.62){
+    if(cell){cell.classList.add("failed");cell.querySelector(".fill").style.width="100%";setTimeout(function(){cell.classList.remove("failed");cell.querySelector(".fill").style.width="0%";renderLearnTrack();},650);}
+    buzz();if(navigator.vibrate)navigator.vibrate(80);
+    setLearnFeedback(learnDead?"Te pasaste: suelta justo cuando se llena. Otra vez.":"Muy corto: mantén un poco más. Otra vez.","bad");return;
+  }
+  if(cell){cell.classList.remove("active");cell.classList.add("done");}
+  learnIdx++;perfectSound();
+  if(learnIdx>=MORSE[learnChar].length){
+    learnDone=true;renderLearnTrack();winSound();
+    setLearnFeedback("¡La "+learnChar+" ("+MORSE[learnChar]+") ya te salió! Toca otra letra o repite para fijarla.","perfect");
+  }else{
+    renderLearnTrack();setLearnFeedback("¡Bien! Sigue con el siguiente símbolo de la "+learnChar+".","good");
+  }
+}
+/* ============ LIBRE / SIN GUÍA ============ */
+var freeBuffer="",freeDecoded="",freeSymbolsLog="",freeHolding=false,freeStart=0,freeLetterTimer=null,freeWordTimer=null;
+function freeRender(){
+  $("free-decoded").textContent=freeDecoded||"—";
+  $("free-symbols").textContent=freeSymbolsLog;
+  var curLetter=freeBuffer?(REVERSE[freeBuffer]||"?"):"—";
+  $("free-current").innerHTML="Letra en curso: <b>"+(freeBuffer||"—")+"</b>"+(freeBuffer?" → sería «"+curLetter+"»":"");
+}
+function freeCloseLetter(){
+  if(!freeBuffer)return;
+  var ch=REVERSE[freeBuffer];
+  freeDecoded+=ch||"�";freeSymbolsLog+=" ";
+  if(!ch)$("free-feedback").textContent="Esa combinación ("+freeBuffer+") no es una letra morse. Sigue practicando.";
+  freeBuffer="";freeRender();
+}
+function freeTimers(){
+  /* Sin guía: sin penalización por tardar entre letras. Los temporizadores solo decodifican:
+     en Real la letra se corta a los 200 ms de silencio y el espacio a los 450 ms.
+     Esperar más nunca quita vidas, puntos ni señal. */
+  clearTimeout(freeLetterTimer);clearTimeout(freeWordTimer);
+  var tm=curTiming();
+  freeLetterTimer=setTimeout(function(){freeCloseLetter();},tm.letterCut);
+  freeWordTimer=setTimeout(function(){freeCloseLetter();if(freeDecoded&&!freeDecoded.endsWith(" ")){freeDecoded+=" ";freeSymbolsLog+=" / ";freeRender();}},tm.wordCut);
+}
+function freeAbort(){
+  if(!freeHolding)return;freeHolding=false;$("free-pad").classList.remove("pressed");stopTone();
+  if(freeBuffer)freeTimers();
+}
+function freePress(){if(freeHolding)return;audio();freeHolding=true;freeStart=performance.now();clearTimeout(freeLetterTimer);clearTimeout(freeWordTimer);$("free-pad").classList.add("pressed");startTone();}
+function freeRelease(){
+  if(!freeHolding)return;freeHolding=false;$("free-pad").classList.remove("pressed");stopTone();
+  var d=performance.now()-freeStart;var sym=d<curTiming().threshold?"·":"−";
+  freeBuffer+=sym;freeSymbolsLog+=sym;
+  $("free-feedback").textContent=sym==="·"?"Punto. Sigue la misma letra o haz una pausa para cerrarla.":"Raya. Sigue la misma letra o haz una pausa para cerrarla.";
+  $("free-feedback").className="feedback";
+  freeRender();freeTimers();
+}
+/* ============ RETOS ============ */
+var challengeMode="blind";
+document.querySelectorAll("[data-challenge]").forEach(function(b){
+  b.addEventListener("click",function(){
+    challengeMode=b.getAttribute("data-challenge");
+    document.querySelectorAll("[data-challenge]").forEach(function(x){x.classList.toggle("sel",x===b);});
+    $("challenge-blind").hidden=challengeMode!=="blind";
+    $("challenge-quiz").hidden=challengeMode==="blind";
+    if(challengeMode!=="blind")newQuizRound();
+  });
+});
+/* Palabra a ciegas */
+var BLIND_WORDS=["SOL","LUNA","MAR","SOS","HOLA","CASA","MESA","AGUA","LUZ","PAN"];
+var blindWord="SOL",blindLetterIdx=0,blindSymIdx=0,blindFaults=0,blindHolding=false,blindStart=0,blindDone=false;
+var blindChips=$("blind-chips");
+BLIND_WORDS.slice(0,6).forEach(function(w){var c=document.createElement("button");c.type="button";c.className="chip";c.textContent=w;c.addEventListener("click",function(){setBlindWord(w);});blindChips.appendChild(c);});
+function setBlindWord(w){
+  blindWord=w;blindLetterIdx=0;blindSymIdx=0;blindFaults=0;blindDone=false;
+  $("blind-word").textContent=w;renderBlind();
+  $("blind-feedback").textContent="De memoria: la "+w[0]+" primero. Corto = punto, largo = raya.";$("blind-feedback").className="feedback";
+  $("blind-stats").textContent="Fallos en esta palabra: 0";
+}
+function renderBlind(){
+  var html="";
+  blindWord.split("").forEach(function(ch,li){
+    var syms=MORSE[ch].split("").map(function(s,si){
+      var cls="";if(li<blindLetterIdx||(li===blindLetterIdx&&si<blindSymIdx))cls="done";else if(li===blindLetterIdx&&si===blindSymIdx)cls="cur";
+      return '<span class="'+cls+'">●</span>';
+    }).join("");
+    html+=syms+" &nbsp;";
+  });
+  $("blind-progress").innerHTML=blindDone?'<span class="done">'+blindWord.split("").map(function(c){return MORSE[c];}).join(" ")+"</span>":html;
+}
+function blindAbort(){if(!blindHolding)return;blindHolding=false;$("blind-pad").classList.remove("pressed");stopTone();}
+function blindPress(){if(blindDone||blindHolding)return;audio();blindHolding=true;blindStart=performance.now();$("blind-pad").classList.add("pressed");startTone();}
+function blindRelease(){
+  if(!blindHolding)return;blindHolding=false;$("blind-pad").classList.remove("pressed");stopTone();
+  var d=performance.now()-blindStart;var sym=d<curTiming().threshold?"·":"−";
+  var expected=MORSE[blindWord[blindLetterIdx]][blindSymIdx];
+  if(sym===expected){
+    perfectSound();blindSymIdx++;
+    if(blindSymIdx>=MORSE[blindWord[blindLetterIdx]].length){blindLetterIdx++;blindSymIdx=0;}
+    if(blindLetterIdx>=blindWord.length){blindDone=true;winSound();$("blind-feedback").textContent="¡Palabra formada a ciegas! Era «"+blindWord+"» = "+blindWord.split("").map(function(c){return MORSE[c];}).join(" ")+" · Fallos: "+blindFaults;$("blind-feedback").className="feedback perfect";}
+    else{$("blind-feedback").textContent="Correcto. Sigue de memoria…";$("blind-feedback").className="feedback good";}
+  }else{
+    blindFaults++;buzz();if(navigator.vibrate)navigator.vibrate(90);
+    $("blind-feedback").textContent="Ese era "+(sym==="·"?"un punto":"una raya")+" y no tocaba ahí. Piensa la letra «"+blindWord[blindLetterIdx]+"» en tu cabeza y reintenta.";$("blind-feedback").className="feedback bad";
+    $("challenge-blind").classList.remove("shake");void $("challenge-blind").offsetWidth;$("challenge-blind").classList.add("shake");
+  }
+  $("blind-stats").textContent="Fallos en esta palabra: "+blindFaults;
+  renderBlind();
+}
+/* Quiz oído / vista */
+var quizAnswer="",quizOk=0,quizStreak=0,quizRounds=0,quizLocked=false;
+var QUIZ_POOL="ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
+function newQuizRound(){
+  quizLocked=false;
+  quizAnswer=QUIZ_POOL[Math.floor(Math.random()*QUIZ_POOL.length)];
+  var opts=[quizAnswer];
+  while(opts.length<4){var r=QUIZ_POOL[Math.floor(Math.random()*QUIZ_POOL.length)];if(opts.indexOf(r)<0)opts.push(r);}
+  opts.sort(function(){return Math.random()-0.5;});
+  var box=$("quiz-opts");box.innerHTML="";
+  opts.forEach(function(o){
+    var b=document.createElement("button");b.type="button";b.className="quiz-opt";b.textContent=o;
+    b.addEventListener("click",function(){
+      if(quizLocked)return;quizLocked=true;quizRounds++;
+      if(o===quizAnswer){quizOk++;quizStreak++;b.classList.add("correct");perfectSound();$("quiz-feedback").textContent="¡Correcto! Era la "+quizAnswer+" ("+MORSE[quizAnswer]+").";$("quiz-feedback").className="feedback good";}
+      else{quizStreak=0;b.classList.add("wrong");buzz();$("quiz-feedback").textContent="Era la "+quizAnswer+" ("+MORSE[quizAnswer]+"). Escúchala otra vez y compárala.";$("quiz-feedback").className="feedback bad";
+        box.querySelectorAll(".quiz-opt").forEach(function(x){if(x.textContent===quizAnswer)x.classList.add("correct");});}
+      $("quiz-ok").textContent=quizOk;$("quiz-streak").textContent=quizStreak;$("quiz-rounds").textContent=quizRounds;
+      setTimeout(function(){if(challengeMode!=="blind")newQuizRound();},1900);
+    });
+    box.appendChild(b);
+  });
+  if(challengeMode==="ear"){
+    $("quiz-title").textContent="Oído: ¿qué letra sonó?";
+    $("quiz-morse").hidden=true;$("quiz-play").style.display="";
+    $("quiz-feedback").textContent="Escucha con atención y elige la letra.";$("quiz-feedback").className="feedback";
+    setTimeout(function(){playSymbols(MORSE[quizAnswer].split(""));},350);
+  }else{
+    $("quiz-title").textContent="Lectura: ¿qué letra es esta?";
+    $("quiz-morse").hidden=false;$("quiz-morse").textContent=MORSE[quizAnswer];
+    $("quiz-play").style.display="none";
+    $("quiz-feedback").textContent="Sin ver la respuesta: reconócela de memoria.";$("quiz-feedback").className="feedback";
+  }
+}
+/* ============ Menú, tema, tutorial, controles globales ============ */
+var drawer=$("drawer"),scrim=$("scrim");
+function openDrawer(){drawer.hidden=false;requestAnimationFrame(function(){requestAnimationFrame(function(){drawer.classList.add("open");});});scrim.classList.add("open");}
+function closeDrawer(){drawer.classList.remove("open");scrim.classList.remove("open");setTimeout(function(){if(!drawer.classList.contains("open"))drawer.hidden=true;},260);}
+$("btn-menu").addEventListener("click",openDrawer);scrim.addEventListener("click",closeDrawer);
+document.querySelectorAll("[data-theme-choice]").forEach(function(b){b.addEventListener("click",function(){document.documentElement.setAttribute("data-theme",b.getAttribute("data-theme-choice"));document.querySelectorAll("[data-theme-choice]").forEach(function(x){x.setAttribute("aria-pressed",x===b?"true":"false");});});});
+document.querySelectorAll("[data-mode-choice]").forEach(function(b){b.addEventListener("click",function(){setSpeedMode(b.getAttribute("data-mode-choice"));});});
+$("btn-listen-board").addEventListener("click",listen);
+$("btn-listen-real-board").addEventListener("click",listenReal);
+$("menu-tutorial").addEventListener("click",function(){closeDrawer();gotoView("transmitir");startTutorial();});
+/* Paneles de Reglas y Créditos (botones de las 3 rayas) */
+function openPanel(id){closeDrawer();$("panel-reglas").hidden=true;$("panel-creditos").hidden=true;$(id).hidden=false;}
+function closePanels(){$("panel-reglas").hidden=true;$("panel-creditos").hidden=true;}
+$("menu-reglas").addEventListener("click",function(){openPanel("panel-reglas");});
+$("menu-creditos").addEventListener("click",function(){openPanel("panel-creditos");});
+document.querySelectorAll("[data-close-panel]").forEach(function(b){b.addEventListener("click",closePanels);});
+document.querySelectorAll(".info-overlay").forEach(function(ov){ov.addEventListener("click",function(e){if(e.target===ov)closePanels();});});
+/* Música ambiental de fondo: generativa, creada con Web Audio dentro de la
+   propia app (acordes suaves que se suceden en bucle). No usa ningún archivo
+   ni obra de terceros: es gratuita y libre de derechos. Interruptor en las
+   3 rayas; apagada por defecto, suena solo si el usuario la activa. */
+var musicOn=false,musicTimer=null,musicChordIdx=0,musicGainNode=null,musicFilter=null,musicLive=[];
+var MUSIC_CHORDS=[
+[130.81,261.63,329.63,392.00,493.88],
+[110.00,220.00,261.63,329.63,392.00],
+[87.31,174.61,220.00,261.63,329.63],
+[98.00,196.00,246.94,293.66,392.00]
+];
+var MUSIC_CHORD_MS=7000;
+function musicPlayChord(freqs){
+  if(!musicOn||!actx||!musicGainNode)return;
+  var now=actx.currentTime,dur=MUSIC_CHORD_MS/1000+2.5;
+  freqs.forEach(function(f,i){
+    var o=actx.createOscillator(),g=actx.createGain();
+    o.type=i<1?"sine":"triangle";o.frequency.value=f;
+    o.detune.value=(i%2?4:-3);
+    var peak=i<1?0.16:0.055;
+    g.gain.setValueAtTime(0.0001,now);
+    g.gain.exponentialRampToValueAtTime(peak,now+2.2);
+    g.gain.setValueAtTime(peak,now+dur-2.6);
+    g.gain.exponentialRampToValueAtTime(0.0001,now+dur);
+    o.connect(g);g.connect(musicFilter);
+    o.start(now);o.stop(now+dur+0.1);
+    musicLive.push({o:o,until:now+dur});
+  });
+  musicLive=musicLive.filter(function(en){return en.until>actx.currentTime;});
+}
+function musicSchedule(){
+  if(!musicOn)return;
+  musicPlayChord(MUSIC_CHORDS[musicChordIdx%MUSIC_CHORDS.length]);
+  musicChordIdx++;
+  musicTimer=setTimeout(musicSchedule,MUSIC_CHORD_MS);
+}
+function startMusic(){
+  if(!audio())return;
+  if(!musicGainNode){
+    musicFilter=actx.createBiquadFilter();musicFilter.type="lowpass";musicFilter.frequency.value=900;musicFilter.Q.value=0.4;
+    musicGainNode=actx.createGain();musicGainNode.gain.value=0.9;
+    musicFilter.connect(musicGainNode);musicGainNode.connect(actx.destination);
+  }
+  musicOn=true;musicChordIdx=0;musicSchedule();
+}
+function stopMusic(){
+  musicOn=false;
+  if(musicTimer){clearTimeout(musicTimer);musicTimer=null;}
+  musicLive.forEach(function(en){try{en.o.stop();}catch(e){}});
+  musicLive=[];
+}
+var musicToggle=$("music-toggle");
+musicToggle.addEventListener("click",function(){
+  if(musicOn)stopMusic();else startMusic();
+  musicToggle.setAttribute("aria-checked",musicOn?"true":"false");
+});
+var tutSteps=[
+{sel:null,view:"transmitir",title:"¡Bienvenido! Vamos con un SOS",text:"El SOS es el mensaje de auxilio más famoso del mundo. Lo usamos de ejemplo para explicarte todo paso a paso, sin saturarte.",sos:true},
+{sel:"#compose-card",view:"transmitir",title:"1 · Aquí escribes tu mensaje",text:"Escribe una palabra o frase corta (máx. 24 caracteres) y pulsa «Crear partitura». Se toca palabra por palabra."},
+{sel:"#track-wrap",view:"transmitir",title:"2 · Esta es la partitura",text:"Círculo = PUNTO (toque corto), barra = RAYA (como tres puntos). Justo debajo de la partitura están los botones de escucha de la partida: «Escuchar clave» la toca a la misma velocidad lenta del llenado en Aprendizaje y «Escuchar a velocidad real» como sonaría en telégrafo real."},
+{sel:"#pad",view:"transmitir",title:"3 · El círculo es el manipulador",text:"Mantén presionada la huella para rellenar la nota que brilla y suelta justo cuando se llene. También funciona con la barra espaciadora."},
+{sel:"#stats",view:"transmitir",title:"4 · Tu señal son 3 corazones",text:"Cada fallo resta 50 puntos, rompe el combo y quita 1 corazón. La carita del receptor se pone triste: si se acaban los corazones, ya no te recibe y se corta la transmisión."},
+{sel:"#view-aprender",view:"aprender",title:"5 · Aprender: el alfabeto se toca",text:"En «Aprender» (solo en la barra de abajo) el alfabeto ya no es una pintura: toca cualquier letra, suena su clave y la practicas con el manipulador hasta dominarla."},
+{sel:"#view-retos",view:"retos",title:"6 · El aprendizaje real: Sin guía y Retos",text:"Seguir la partitura es solo el inicio. En «Sin guía» creas palabras tú solo y la app decodifica lo que tocaste. En «Retos» formas palabras a ciegas y entrenas el oído sin ver nada. Ahí es donde el morse se te queda."},
+{sel:"#btn-start",view:"transmitir",title:"7 · ¡A transmitir!",text:"Pulsa «Empezar transmisión» y toca el SOS completo. Con el interruptor Aprendizaje / Real cambias la velocidad: en Aprendizaje el audio y el llenado van lentos y sincronizados (punto 180 ms, raya 540 ms); en Real todo va a ritmo de telégrafo. En Sin guía no pierdes señal por tardar entre letras."}
+];
+var tutIdx=0,tutTarget=null;
+function showTutStep(){
+  var step=tutSteps[tutIdx];
+  if(currentView!==step.view){
+    currentView=step.view;
+    document.querySelectorAll(".view").forEach(function(v){v.classList.remove("active");});
+    $("view-"+step.view).classList.add("active");
+    document.querySelectorAll(".navbtn").forEach(function(b){b.setAttribute("aria-selected",b.getAttribute("data-goto")===step.view?"true":"false");});
+    $("mode-label").textContent=VIEW_LABELS[step.view];
+    $("main-scroll").scrollTop=0;
+    updateHeaderCollapse();
+    /* El tutorial también cambia de vista: aplicar el mismo defecto que gotoView
+       (Sin guía en Real, nunca en Aprendizaje). */
+    applyViewDefaultMode(step.view);
+  }
+  if(tutTarget)tutTarget.classList.remove("tut-highlight");
+  tutTarget=step.sel?document.querySelector(step.sel):null;
+  if(tutTarget){tutTarget.classList.add("tut-highlight");tutTarget.scrollIntoView({behavior:"smooth",block:"center"});}
+  $("tut-count").textContent="PASO "+(tutIdx+1)+" DE "+tutSteps.length;
+  $("tut-title").textContent=step.title;$("tut-text").textContent=step.text;
+  $("tut-sos").hidden=!step.sos;
+  $("tut-back").disabled=tutIdx===0;$("tut-back").style.opacity=tutIdx===0?".35":"1";
+  $("tut-next").textContent=tutIdx===tutSteps.length-1?"¡A jugar!":"Siguiente";
+  $("tut-box").classList.add("show");
+}
+function endTutorial(){if(tutTarget)tutTarget.classList.remove("tut-highlight");tutTarget=null;$("tut-box").classList.remove("show");}
+function startTutorial(){if(boardCard.hidden)build();tutIdx=0;showTutStep();}
+$("tut-next").addEventListener("click",function(){if(tutIdx>=tutSteps.length-1){endTutorial();gotoView("transmitir");return;}tutIdx++;showTutStep();});
+$("tut-back").addEventListener("click",function(){if(tutIdx>0){tutIdx--;showTutStep();}});
+$("tut-skip").addEventListener("click",function(){endTutorial();gotoView("transmitir");});
+/* Pads y botones */
+bindPad(padEl,press,release,abortPress);
+bindPad($("learn-pad"),learnPress,learnRelease,learnAbort);
+bindPad($("free-pad"),freePress,freeRelease,freeAbort);
+bindPad($("blind-pad"),blindPress,blindRelease,blindAbort);
+document.addEventListener("keydown",function(e){
+  if(e.code!=="Space"||e.repeat)return;
+  var tag=(document.activeElement&&document.activeElement.tagName)||"";
+  if(tag==="TEXTAREA"||tag==="INPUT")return;
+  e.preventDefault();
+  if(currentView==="transmitir")press();else if(currentView==="aprender")learnPress();else if(currentView==="libre")freePress();else if(currentView==="retos"&&challengeMode==="blind")blindPress();
+});
+document.addEventListener("keyup",function(e){
+  if(e.code!=="Space")return;
+  var tag=(document.activeElement&&document.activeElement.tagName)||"";
+  if(tag==="TEXTAREA"||tag==="INPUT")return;
+  e.preventDefault();
+  if(currentView==="transmitir")release();else if(currentView==="aprender")learnRelease();else if(currentView==="libre")freeRelease();else if(currentView==="retos"&&challengeMode==="blind")blindRelease();
+});
+$("btn-build").addEventListener("click",function(){if(build())boardCard.scrollIntoView({behavior:"smooth",block:"start"});});
+$("btn-start").addEventListener("click",startGame);
+$("btn-retry").addEventListener("click",function(){resultsEl.classList.remove("show");startGame();});
+$("btn-new").addEventListener("click",function(){resultsEl.classList.remove("show");$("main-scroll").scrollTop=0;msgEl.focus();});
+msgEl.addEventListener("input",function(){$("char-count").textContent=msgEl.value.length;});
+document.querySelectorAll(".chip[data-phrase]").forEach(function(chip){chip.addEventListener("click",function(){msgEl.value=chip.getAttribute("data-phrase");$("char-count").textContent=msgEl.value.length;build();});});
+$("btn-learn-listen").addEventListener("click",playLearnLetter);
+$("btn-learn-reset").addEventListener("click",function(){selectLetter(learnChar,false);});
+$("btn-learn-random").addEventListener("click",function(){var pool="ABCDEFGHIJKLMNOPQRSTUVWXYZ";selectLetter(pool[Math.floor(Math.random()*pool.length)],true);});
+$("free-close-letter").addEventListener("click",function(){clearTimeout(freeLetterTimer);clearTimeout(freeWordTimer);freeCloseLetter();});
+$("free-space").addEventListener("click",function(){freeCloseLetter();if(freeDecoded&&!freeDecoded.endsWith(" ")){freeDecoded+=" ";freeSymbolsLog+=" / ";freeRender();}});
+$("free-undo").addEventListener("click",function(){freeBuffer="";freeDecoded=freeDecoded.replace(/\s+$/,"").slice(0,-1);freeRender();$("free-feedback").textContent="Última letra borrada.";});
+$("free-clear").addEventListener("click",function(){freeBuffer="";freeDecoded="";freeSymbolsLog="";freeRender();$("free-feedback").textContent="Todo limpio. Toca tu primera letra de memoria.";});
+$("free-listen").addEventListener("click",function(){var t=freeDecoded.trim();if(t)playText(t);else $("free-feedback").textContent="Todavía no hay nada que escuchar: toca algo primero.";});
+$("free-check-toggle").addEventListener("click",function(){$("free-check").hidden=!$("free-check").hidden;});
+$("free-check-btn").addEventListener("click",function(){
+  var target=normalize($("free-target").value).replace(/\s+/g," ").trim();
+  var mine=freeDecoded.replace(/\s+/g," ").trim();
+  var r=$("free-check-result");
+  if(!target){r.textContent="Escribe primero la palabra que intentabas.";return;}
+  r.textContent=mine===target?"¡Exacto! Escribiste «"+target+"» sin guía. Eso ya es morse de verdad.":"Tu transmisión dice «"+(mine||"—")+"» y la meta era «"+target+"». Compara letra por letra en Aprender y reintenta.";
+});
+$("blind-hint").addEventListener("click",function(){if(!blindDone)$("blind-feedback").textContent="Pista: la letra «"+blindWord[blindLetterIdx]+"» es "+MORSE[blindWord[blindLetterIdx]]+" — ahora tócala de memoria.";});
+$("blind-restart").addEventListener("click",function(){setBlindWord(blindWord);});
+$("blind-random").addEventListener("click",function(){setBlindWord(BLIND_WORDS[Math.floor(Math.random()*BLIND_WORDS.length)]);});
+$("quiz-next").addEventListener("click",newQuizRound);
+$("quiz-play").addEventListener("click",function(){if(quizAnswer)playSymbols(MORSE[quizAnswer].split(""));});
+/* Inicio */
+updateHeaderCollapse();
+build();
+selectLetter("S",false);
+setBlindWord("SOL");
+freeRender();
+startTutorial();
+</script>
+<script>
+/* PWA: registra el service worker mínimo (sw.js, en la raíz junto a
+   index.html) que cachea la app para abrirla sin conexión. Tiene que
+   vivir en la raíz: un service worker solo controla páginas de su
+   propia carpeta, y desde assets/ su alcance no llegaría a index.html.
+   Si el navegador o el contexto no lo permiten, la app sigue
+   funcionando igual en línea. */
+if("serviceWorker" in navigator){
+  window.addEventListener("load",function(){
+    navigator.serviceWorker.register("sw.js").catch(function(){});
+  });
+}
+</script>
+</body>
+</html>
